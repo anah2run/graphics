@@ -1,6 +1,5 @@
 #include "cgmath.h"		// slee's simple math library
 #include "cgut.h"		// slee's OpenGL utility
-#include "trackball.h"	// virtual trackball
 #include "map.h"
 #include "character.h"
 
@@ -23,6 +22,7 @@ struct camera
 	float	aspect;
 	float	dnear = 1.0f;
 	float	dfar = 1000.0f;
+
 	mat4	projection_matrix;
 };
 
@@ -41,14 +41,20 @@ GLuint	vertex_array = 0;	// ID holder for vertex array object
 int		frame = 0;				// index of rendering frames
 // holder of vertices and indices of a unit circle
 std::vector<vertex>	unit_block_vertices;	// host-side vertices
-Map			map;
+Map map(new_map);
 Character	crt(&map,vec2(2,2));
+Enemy enemy(&map, vec2(8, 6));
+Enemy enemy2(&map, vec2(14, 6));
+Enemy enemy3(&map, vec2(12, 9));
+
+std::list<vec3> bullet;
+float bullet_spd = 0.2f;
+
 bool	b_key_right;
 bool	b_key_left;
 //*************************************
 // scene objects
 camera		cam;
-trackball	tb;
 
 //*************************************
 void update(float t)
@@ -64,10 +70,41 @@ void update(float t)
 		crt.move_left();
 	}
 
-	cam.eye = vec3(crt.position + vec2(3, 2), 20);
+	// build bullets
+	std::list<vec3> bullet_temp;
+	while (!bullet.empty()) {
+		vec3 b = bullet.back();
+		bullet.pop_back();
+		bool destroy = false;
+		if (b.z >= 0)
+		{
+			b.x += bullet_spd;
+		}
+		else {
+			b.x -= bullet_spd;
+		}
+		vec2 pos = vec2(b.x, b.y);
+		Block* bp = map.block(pos);
+		if (bp != 0) // bp is not null;
+		{
+			destroy = block_array[bp->block_id].destroy_bullet;
+			if (block_array[bp->block_id].max_hp > 0) {
+				bp->hit(1);
+			}
+		}
+		else destroy = true;
+		if (!destroy) {
+			bullet_temp.push_back(b);
+		}
+
+	}
+	bullet = bullet_temp;
+
+	cam.eye = vec3(crt.position + vec2(-5, 2), 15);
 	cam.at = vec3(crt.position + vec2(3, 2), 0);
 	cam.view_matrix = mat4::look_at(cam.eye, cam.at, cam.up);
 	crt.update(float(t), b_key_left || b_key_right);
+	//enemy.update(float(t), true); enemy2.update(float(t), true); enemy3.update(float(t), true);
 
 	// update uniform variables in vertex/fragment shaders
 	GLint uloc;
@@ -77,35 +114,74 @@ void update(float t)
 
 void render()
 {
+
 	// clear screen (with background color) and clear depth buffer
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
 	// notify GL that we use our own program
 	glUseProgram( program );
 
+	// build bullets
+	for (vec3 i : bullet){
+		mat4 model_matrix = mat4::translate(i.x, i.y, 0) * mat4::scale(0.2f,0.2f,0.2f);
+
+		GLint uloc;
+		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
+		glDrawElements(GL_TRIANGLES, 3*4*6, GL_UNSIGNED_INT, nullptr);
+	}
+
+	GLint uloc;
+	mat4 model_matrix;
 	// build the model matrix for map
 	for (int i = 0; i < MAP_WIDTH; i++) {
 		for (int j = 0; j < MAP_HEIGHT; j++) {
-			if (map.map[i][j] == 1) {
-				mat4 model_matrix = mat4::translate(float(i), float(j), 0);
-
-				GLint uloc;
-				uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
-
-				// per-circle draw calls
-				glDrawElements(GL_TRIANGLES, 36 , GL_UNSIGNED_INT, nullptr);
+			int block_id = map.map[i][j].block_id;
+			if (block_id > 0) {
+				Block* bp = &map.map[i][j];
+				mat4 translate_matrix = mat4::translate(float(i), float(j), 0);
+				mat4 scale_matrix = mat4::scale(1);
+				switch (block_id) {
+				case 2://wood
+					scale_matrix = mat4::scale(1,1,float(bp->hp) / block_array[bp->block_id].max_hp);
+					break;
+				default://wall
+					break;
+				}
+				model_matrix = translate_matrix * scale_matrix;
+				uloc = glGetUniformLocation(program, "model_matrix");
+				if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
+				glDrawElements(GL_TRIANGLES, 3 * 4 * 6, GL_UNSIGNED_INT, nullptr);
+				
 			}
 		}
 	}
 
 	// build character model
-	mat4 model_matrix = mat4::translate(crt.position.x, crt.position.y, 0);
-	GLint uloc;
+	if (crt.invinc_t <= 0 || int(crt.invinc_t*10) % 2 == 0) {
+		model_matrix = mat4::translate(crt.position.x - crt.hitbox.width() / 2, crt.position.y - crt.hitbox.height() / 2, 0) * mat4::scale(crt.hitbox.width(), crt.hitbox.height(),0.1f);
+		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
+		glDrawElements(GL_TRIANGLES, 3 * 4 * 6, GL_UNSIGNED_INT, nullptr);
+	}
+
+/*
+	// build enemey model
+	model_matrix = mat4::translate(enemy.position.x, enemy.position.y, 0) * mat4::scale(float(enemy.hp) / float(enemy.max_hp), float(enemy.hp) / enemy.max_hp, float(enemy.hp) / enemy.max_hp);
 	uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
 	// per-circle draw calls
 	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
 
+	// build enemey model
+	model_matrix = mat4::translate(enemy2.position.x, enemy2.position.y, 0) * mat4::scale(float(enemy2.hp) / enemy2.max_hp, float(enemy2.hp) / enemy2.max_hp, float(enemy2.hp) / enemy2.max_hp);
+	uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
+	// per-circle draw calls
+	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
 
+	model_matrix = mat4::translate(enemy3.position.x, enemy3.position.y, 0) * mat4::scale(float(enemy3.hp) / enemy3.max_hp, float(enemy3.hp) / enemy3.max_hp, float(enemy3.hp) / enemy3.max_hp);
+	uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
+	// per-circle draw calls
+	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
+
+*/
 	// swap front and back buffers, and display to screen
 	glfwSwapBuffers( window );
 }
@@ -133,11 +209,20 @@ void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 	{
 		if (key == GLFW_KEY_ESCAPE || key == GLFW_KEY_Q)	glfwSetWindowShouldClose(window, GL_TRUE);
 		else if (key == GLFW_KEY_H || key == GLFW_KEY_F1)	print_help();
-		else if (key == GLFW_KEY_HOME)					cam = camera();
-
-		else if (key == GLFW_KEY_A) b_key_left = true;
-		else if (key == GLFW_KEY_D) b_key_right = true;
+		else if (key == GLFW_KEY_HOME)		cam = camera();
+		else if (key == GLFW_KEY_K)		crt.hit(1);
+		else if (key == GLFW_KEY_A)
+		{
+			crt.direction = -1;
+			b_key_left = true;
+		}
+		else if (key == GLFW_KEY_D)
+		{
+			crt.direction = 1;
+			b_key_right = true;
+		}
 		else if (key == GLFW_KEY_W || key == GLFW_KEY_SPACE) crt.jump();
+		else if (key == GLFW_KEY_J) bullet.push_back(vec3(crt.position + vec2(0),float(crt.direction.x)));
 	}
 	if (action == GLFW_RELEASE) {
 		if (key == GLFW_KEY_A) b_key_left = false;
@@ -149,18 +234,13 @@ void mouse( GLFWwindow* window, int button, int action, int mods )
 {
 	if(button==GLFW_MOUSE_BUTTON_LEFT)
 	{
-		dvec2 pos; glfwGetCursorPos(window,&pos.x,&pos.y);
-		vec2 npos = cursor_to_ndc( pos, window_size );
-		if(action==GLFW_PRESS)			tb.begin( cam.view_matrix, npos );
-		else if(action==GLFW_RELEASE)	tb.end();
+		//if (action == GLFW_PRESS);
+		//else if (action == GLFW_RELEASE);
 	}
 }
 
 void motion( GLFWwindow* window, double x, double y )
 {
-	if(!tb.is_tracking()) return;
-	vec2 npos = cursor_to_ndc( dvec2(x,y), window_size );
-	cam.view_matrix = tb.update( npos );
 }
 
 void update_vertex_buffer(const std::vector<vertex>& vertices)
@@ -175,16 +255,7 @@ void update_vertex_buffer(const std::vector<vertex>& vertices)
 	if (vertices.empty()) { printf("[error] vertices is empty.\n"); return; }
 
 	// create buffers
-	std::vector<uint> indices = 
-	{
-		0,1,2,1,3,2,
-		6,7,5,6,5,4,
-		2,6,0,6,4,0,
-		3,5,7,3,1,5,
-		7,6,3,3,6,2,
-		1,0,5,0,4,5
-	};
-
+	std::vector<uint> indices = block_indices;
 	
 	// generation of vertex buffer: use vertices as it is
 	glGenBuffers(1, &vertex_buffer);
@@ -210,9 +281,7 @@ bool user_init()
 	// init GL states
 	glClearColor( 39/255.0f, 40/255.0f, 34/255.0f, 1.0f );	// set clear color
 	glEnable( GL_CULL_FACE );								// turn on backface culling
-	glEnable( GL_DEPTH_TEST );								// turn on depth tests
-
-	map.create();
+	glEnable( GL_DEPTH_TEST );								// turn on depth tests	
 
 	// define the position of four corner vertices
 	unit_block_vertices = std::move(create_block_vertices());
@@ -221,7 +290,10 @@ bool user_init()
 	update_vertex_buffer(unit_block_vertices);
 
 	glBindVertexArray(vertex_array);
-
+	enemy.max_speed = 1.0f;
+	enemy2.max_speed = 2.0f;
+	enemy3.max_speed = 1.5f;
+	enemy3.ai_level = 2;
 
 	return true;
 }

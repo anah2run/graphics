@@ -58,10 +58,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="character.h" />
+    <ClInclude Include="gun.h" />
     <ClInclude Include="map.h" />
     <ClInclude Include="cgmath.h" />
     <ClInclude Include="cgut.h" />
-    <ClInclude Include="trackball.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\bin\shaders\trackball.frag" />
