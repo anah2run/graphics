@@ -31,15 +31,17 @@ public:
 		position = pos;
 	}
 	
-	float	invinc_time = 1.5f;	// 피격 시 무적 시간
-	float	max_speed = 5.0f;	// 최대 이동속도
-	float	max_jump = 3.5f;	// 최대 점프
-	int	max_hp = 3;				// 최대 체력
+	const float	invinc_time = 1.5f;	// 피격 시 무적 시간
+	const float	max_speed = 5.0f;	// 최대 이동속도
+	const float	max_jump = 3.5f;	// 최대 점프
+	const int	max_hp = 3;				// 최대 체력
 	Map* mapp;					// 맵 포인터
 
-	vec2	direction;			// 가고자 하는 방향
+	vec2	direction = vec2(1,0);	// 가고자 하는 방향
 	Hitbox	hitbox = Hitbox();	// 히트 박스
 	vec2	position;			// 위치	
+	vec2	velocity = vec2(0);
+	vec2	acceration = vec2(0);
 	int		hp = max_hp;		// 현재 체력
 	float	invinc_t = 0;		// 무적 타이머
 	bool	is_jump = true;		// 점프 상태
@@ -55,9 +57,7 @@ public:
 	bool	checkDeath();
 	void	physics(float t, bool);
 	void	update(float t, bool moving);
-private:
-	vec2	velocity = vec2(0);
-	vec2	acceration = vec2(0);
+
 };
 
 inline bool Character::hit(int damage) {
@@ -76,7 +76,7 @@ inline bool Character::heal(int amount) {
 	return flag;
 }
 inline bool Character::checkDeath() {
-	return hp <= 0;
+	return hp <= 0 || position.y < -5;
 }
 
 inline bool Character::checkJump() {
@@ -162,6 +162,7 @@ inline void Character::update(float t, bool moving)
 
 inline void Character::move_right()
 {
+	direction.x = 1;
 	if (is_jump) {
 		if (velocity.x < max_speed/2)
 		{
@@ -176,6 +177,7 @@ inline void Character::move_right()
 
 inline void Character::move_left()
 {
+	direction.x = -1;
 	if (is_jump ) {
 		if (velocity.x > -max_speed/2)
 		{

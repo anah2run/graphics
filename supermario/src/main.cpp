@@ -2,6 +2,7 @@
 #include "cgut.h"		// slee's OpenGL utility
 #include "map.h"
 #include "character.h"
+#include "gun.h"
 
 //*************************************
 // global constants
@@ -43,15 +44,14 @@ int		frame = 0;				// index of rendering frames
 std::vector<vertex>	unit_block_vertices;	// host-side vertices
 Map map(new_map);
 Character	crt(&map,vec2(2,2));
+Gun			gun(&crt, 0);
 Enemy enemy(&map, vec2(8, 6));
 Enemy enemy2(&map, vec2(14, 6));
 Enemy enemy3(&map, vec2(12, 9));
 
-std::list<vec3> bullet;
-float bullet_spd = 0.2f;
-
-bool	b_key_right;
-bool	b_key_left;
+bool	b_key_fire = false;
+bool	b_key_right = false;
+bool	b_key_left = false;
 //*************************************
 // scene objects
 camera		cam;
@@ -69,36 +69,25 @@ void update(float t)
 	else if (b_key_left) {
 		crt.move_left();
 	}
+	gun.trigger(&b_key_fire, t);
 
 	// build bullets
-	std::list<vec3> bullet_temp;
-	while (!bullet.empty()) {
-		vec3 b = bullet.back();
-		bullet.pop_back();
+	std::list<Bullet>::iterator it;
+	for (it = bullet_instances.begin(); it != bullet_instances.end(); it++) {
 		bool destroy = false;
-		if (b.z >= 0)
-		{
-			b.x += bullet_spd;
-		}
-		else {
-			b.x -= bullet_spd;
-		}
-		vec2 pos = vec2(b.x, b.y);
-		Block* bp = map.block(pos);
+		it->update(t);
+		Block* bp = map.block(it->position);
 		if (bp != 0) // bp is not null;
 		{
 			destroy = block_array[bp->block_id].destroy_bullet;
 			if (block_array[bp->block_id].max_hp > 0) {
-				bp->hit(1);
+				bp->hit(it->prop->block_dmg);
 			}
 		}
-		else destroy = true;
-		if (!destroy) {
-			bullet_temp.push_back(b);
+		if (destroy) {
+			bullet_instances.erase(it);
 		}
-
 	}
-	bullet = bullet_temp;
 
 	cam.eye = vec3(crt.position + vec2(-5, 2), 15);
 	cam.at = vec3(crt.position + vec2(3, 2), 0);
@@ -122,8 +111,9 @@ void render()
 	glUseProgram( program );
 
 	// build bullets
-	for (vec3 i : bullet){
-		mat4 model_matrix = mat4::translate(i.x, i.y, 0) * mat4::scale(0.2f,0.2f,0.2f);
+	std::list<Bullet>::iterator it;
+	for (it = bullet_instances.begin(); it != bullet_instances.end(); it++) {
+		mat4 model_matrix = mat4::translate(it->position.x, it->position.y, 0) * mat4::scale(0.2f,0.2f,0.2f);
 
 		GLint uloc;
 		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
@@ -213,20 +203,23 @@ void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 		else if (key == GLFW_KEY_K)		crt.hit(1);
 		else if (key == GLFW_KEY_A)
 		{
-			crt.direction = -1;
 			b_key_left = true;
 		}
 		else if (key == GLFW_KEY_D)
 		{
-			crt.direction = 1;
 			b_key_right = true;
 		}
 		else if (key == GLFW_KEY_W || key == GLFW_KEY_SPACE) crt.jump();
-		else if (key == GLFW_KEY_J) bullet.push_back(vec3(crt.position + vec2(0),float(crt.direction.x)));
+		else if (key == GLFW_KEY_J)							b_key_fire = true;
+		else if (key == GLFW_KEY_1)	gun.swap_gun(0);
+		else if (key == GLFW_KEY_2)	gun.swap_gun(1);
+		else if (key == GLFW_KEY_3)	gun.swap_gun(2);
+		else if (key == GLFW_KEY_4)	gun.swap_gun(3);
 	}
 	if (action == GLFW_RELEASE) {
 		if (key == GLFW_KEY_A) b_key_left = false;
-		else if (key == GLFW_KEY_D) b_key_right = false;
+		if (key == GLFW_KEY_D) b_key_right = false;
+		if (key == GLFW_KEY_J) b_key_fire = false;
 	}
 }
 
@@ -290,10 +283,6 @@ bool user_init()
 	update_vertex_buffer(unit_block_vertices);
 
 	glBindVertexArray(vertex_array);
-	enemy.max_speed = 1.0f;
-	enemy2.max_speed = 2.0f;
-	enemy3.max_speed = 1.5f;
-	enemy3.ai_level = 2;
 
 	return true;
 }
