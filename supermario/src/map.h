@@ -1,6 +1,6 @@
 #pragma once
-static const uint MAP_WIDTH = 50;	// ¸Ê ³ĞÀÌ
-static const uint MAP_HEIGHT = 20;	// ¸Ê ³ôÀÌ
+static const uint MAP_WIDTH = 100;	// ¸Ê ³ĞÀÌ
+static const uint MAP_HEIGHT = 50;	// ¸Ê ³ôÀÌ
 int new_map[MAP_WIDTH][MAP_HEIGHT] = {
 		{1,1,1,1,1,1,1,1,0,},
 		{1,0,4},
@@ -21,10 +21,10 @@ int new_map[MAP_WIDTH][MAP_HEIGHT] = {
 		{1,1,1,2},
 		{1,1,1,2,2},
 		{1,1,0},
-		{1,1,2,2,1,1},
-		{1,1,0,0,0,1},
-		{1,1,0,0,0,1},
-		{1,1,1,1,1,1,1,1},
+		{1,5,5,2,2,1},
+		{1,5,0,0,2,1},
+		{1,1,0,0,5,1},
+		{1,5,5,5,1,1,1,1},
 };
 
 struct BlockProp {
@@ -32,6 +32,7 @@ struct BlockProp {
 	int texture_id = 0;
 	int max_hp = -1;
 	bool destroy_bullet = true;
+	int collid_dmg = 0;
 };
 static const BlockProp	block_array[] = {
 //		id	tid	hp	destroy_bullet
@@ -39,15 +40,16 @@ static const BlockProp	block_array[] = {
 	{	1,	1,	-1,	true	},		// stone
 	{	2,	2,	5,	true	},		// wood
 	{	3,	3,	-1,	false	},		// hole
-	{	4,	4,	1,	false	}		// glass
+	{	4,	4,	1,	false	},		// glass
+	{	5,	5,	8,	true,	1	},		// spike
 };
 class Block {
 public:
 	void swap_block(int i) {
-		block_id = i;
-		hp = block_array[i].max_hp;
+		prop = &block_array[i];
+		hp = prop->max_hp;
 	}
-	int block_id;
+	const BlockProp* prop;
 	int hp;
 	Block() {
 		swap_block(0);
@@ -110,8 +112,7 @@ public:
 	{
 		Block* bp = block(pos);
 		if (bp == 0) return 0;
-		return bp->block_id;
-		return 1;
+		return bp->prop->block_id;
 	}
 	Map() {
 	}

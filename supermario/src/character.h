@@ -31,11 +31,12 @@ public:
 		position = pos;
 	}
 	
-	const float	invinc_time = 1.5f;	// 피격 시 무적 시간
+	float	invinc_time = 1.5f;	// 피격 시 무적 시간
 	const float	max_speed = 5.0f;	// 최대 이동속도
+	const float speed = 1.0f;
 	const float	max_jump = 3.5f;	// 최대 점프
-	const int	max_hp = 3;				// 최대 체력
-	Map* mapp;					// 맵 포인터
+	const int	max_hp = 3;			// 최대 체력
+	Map* mapp;						// 맵 포인터
 
 	vec2	direction = vec2(1,0);	// 가고자 하는 방향
 	Hitbox	hitbox = Hitbox();	// 히트 박스
@@ -45,25 +46,27 @@ public:
 	int		hp = max_hp;		// 현재 체력
 	float	invinc_t = 0;		// 무적 타이머
 	bool	is_jump = true;		// 점프 상태
-	int		stand_block = 0;	// 서 있는 블록
+	Block*	stand_blockp;		// 바로 아래 블록 포인터
 
 	// function
-	bool	hit(int damage);
+	bool	hit(int damage, vec2 hit_pos);
 	bool	heal(int amount);
 	void	move_right();
 	void	move_left();
 	void	jump();
 	bool	checkJump();
 	bool	checkDeath();
-	void	physics(float t, bool);
+	void	physics(float t, bool moving);
 	void	update(float t, bool moving);
 
 };
 
-inline bool Character::hit(int damage) {
+inline bool Character::hit(int damage, vec2 hit_pos) {
 	if (invinc_t <= 0) {
-		printf("player took %d damage! hp: %d\n", damage, hp);
+		printf("took %d damage! hp: %d\n", damage, hp);
 		hp -= damage;
+		vec2 d = (position - hit_pos).normalize();
+		velocity = d * 10;
 		invinc_t = invinc_time;
 		checkDeath();
 		return true;
@@ -82,8 +85,8 @@ inline bool Character::checkDeath() {
 inline bool Character::checkJump() {
 	vec2 stand_block_pos = position - vec2(0, 1);
 	//printf("check jump : %f %f \n",stand_block_pos.x,position.y);
-	stand_block = mapp->block_id(stand_block_pos);
-	return stand_block == 0;
+	stand_blockp = mapp->block(stand_block_pos);
+	return stand_blockp->prop->block_id == 0;
 }
 inline void Character::physics(float t, bool moving)
 {
@@ -91,12 +94,16 @@ inline void Character::physics(float t, bool moving)
 	if (is_jump) {
 		acceration.x *= 0.8f;
 		acceration.y = -mapp->gravity;
-		stand_block = 0;
+		stand_blockp = 0;
 	}
 	else {
 		is_jump = checkJump();
 		acceration.y = 0;
 		velocity.y = 0;
+		if (stand_blockp->prop->collid_dmg > 0) {
+			is_jump = true;
+			hit(stand_blockp->prop->collid_dmg, position + vec2(0, -1));
+		}
 		if (!moving) acceration.x = -velocity.x * 10;
 		else acceration.x = 0;
 	}
@@ -106,8 +113,13 @@ inline void Character::physics(float t, bool moving)
 		int temp_pos_x = int(position.x + hitbox.box_rec.z);
 		for (int i = int(temp_pos.x + hitbox.box_rec.z); i <= temp_pos_x; i++)
 		{
-			if (mapp->block_id(vec2(float(i), temp_pos.y)) > 0) {
+			Block* bp = mapp->block(vec2(float(i), temp_pos.y));
+			if (bp == 0) continue;
+			if (bp->prop->block_id > 0) {
 				position.x = i - hitbox.box_rec.z;
+				if (bp->prop->collid_dmg > 0) {
+					hit(bp->prop->collid_dmg, position + vec2(1, 0));
+				}
 				break;
 			}
 		}
@@ -116,8 +128,13 @@ inline void Character::physics(float t, bool moving)
 		int temp_pos_x = int(position.x + hitbox.box_rec.x);
 		for (int i = int(temp_pos.x + hitbox.box_rec.x); i >= temp_pos_x; i--)
 		{
-			if (mapp->block_id(vec2(float(i), temp_pos.y)) > 0) {
+			Block* bp = mapp->block(vec2(float(i), temp_pos.y));
+			if (bp == 0) continue;
+			if (bp->prop->block_id > 0) {
 				position.x = i + 1 - hitbox.box_rec.x;
+				if (bp->prop->collid_dmg > 0) {
+					hit(bp->prop->collid_dmg, position + vec2(-1, 0));
+				}
 				break;
 			}
 		}
@@ -129,12 +146,16 @@ inline void Character::physics(float t, bool moving)
 			for (int i = int(temp_pos.y + hitbox.box_rec.a); i <= temp_pos_y; i++)
 			{
 				Block* bp = mapp->block(vec2(position.x, float(i)));
-				if (block_array[bp->block_id].max_hp > 0) {
+				if (bp == 0) continue;
+				if (bp->prop->max_hp > 0) {
 					bp->hit(1);
 				}
-				if (bp->block_id > 0) {
+				if (bp->prop->block_id > 0) {
 					position.y = i - hitbox.box_rec.a;
 					velocity.y = 0; // 천장 부딫힘
+					if (bp->prop->collid_dmg > 0) {
+						hit(bp->prop->collid_dmg, position + vec2(0, 1));
+					}
 					break;
 				}
 			}
@@ -171,7 +192,7 @@ inline void Character::move_right()
 	}
 	else
 	{
-		velocity.x = max_speed;
+		velocity.x = std::min(max_speed, velocity.x + speed);
 	}
 }
 
@@ -185,7 +206,7 @@ inline void Character::move_left()
 		}
 	}
 	else
-	velocity.x = -max_speed;
+		velocity.x = std::max(-max_speed, velocity.x - speed);
 }
 
 inline void Character::jump()
@@ -200,17 +221,15 @@ inline void Character::jump()
 class Enemy : public Character
 {
 public:
-	int ai_level = 1;
-	float invinc_t = 0;
+	float	active_range = 5;	// 인식 반경 (x축)
+	float	invinc_time = 0;	// 피격 시 무적 시간
+	float	action_timer = 0;	// 행동 대기 시간
 	Enemy(Map* p, vec2 pos) {
 		mapp = p;
 		position = pos;
-	
 	}
-	void update(float t, bool b) {
-		physics(t,b);
-		float x = position.x;
-		int y = int(position.y);
+	void update(float t, bool moving) {
+		physics(t,moving);
 		move();
 	}
 	void move() {
@@ -221,8 +240,6 @@ public:
 			move_left();
 		}
 	}
-	
-
 };
 class Player : public Character 
 {

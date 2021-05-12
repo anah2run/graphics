@@ -79,8 +79,8 @@ void update(float t)
 		Block* bp = map.block(it->position);
 		if (bp != 0) // bp is not null;
 		{
-			destroy = block_array[bp->block_id].destroy_bullet;
-			if (block_array[bp->block_id].max_hp > 0) {
+			destroy = bp->prop->destroy_bullet;
+			if (bp->prop->max_hp > 0) {
 				bp->hit(it->prop->block_dmg);
 			}
 		}
@@ -125,14 +125,15 @@ void render()
 	// build the model matrix for map
 	for (int i = 0; i < MAP_WIDTH; i++) {
 		for (int j = 0; j < MAP_HEIGHT; j++) {
-			int block_id = map.map[i][j].block_id;
+			int block_id = map.map[i][j].prop->block_id;
 			if (block_id > 0) {
 				Block* bp = &map.map[i][j];
 				mat4 translate_matrix = mat4::translate(float(i), float(j), 0);
 				mat4 scale_matrix = mat4::scale(1);
 				switch (block_id) {
-				case 2://wood
-					scale_matrix = mat4::scale(1,1,float(bp->hp) / block_array[bp->block_id].max_hp);
+				case 2:
+				case 5://wood & spike
+					scale_matrix = mat4::scale(1,1,float(bp->hp) / bp->prop->max_hp);
 					break;
 				default://wall
 					break;
@@ -200,7 +201,7 @@ void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 		if (key == GLFW_KEY_ESCAPE || key == GLFW_KEY_Q)	glfwSetWindowShouldClose(window, GL_TRUE);
 		else if (key == GLFW_KEY_H || key == GLFW_KEY_F1)	print_help();
 		else if (key == GLFW_KEY_HOME)		cam = camera();
-		else if (key == GLFW_KEY_K)		crt.hit(1);
+		else if (key == GLFW_KEY_K)		crt.hit(1,vec2(5,5));
 		else if (key == GLFW_KEY_A)
 		{
 			b_key_left = true;
