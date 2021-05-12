@@ -43,7 +43,7 @@ int		frame = 0;				// index of rendering frames
 // holder of vertices and indices of a unit circle
 std::vector<vertex>	unit_block_vertices;	// host-side vertices
 Map map(new_map);
-Character	crt(&map,vec2(2,2));
+Character	crt(&map,vec2(1,3));
 Gun			gun(&crt, 0);
 std::list<Enemy> enemy_list;
 
@@ -87,12 +87,12 @@ void update(float t)
 			if (eit->hitbox.collid(it->position - eit->position)) {
 				if (eit->hit(it->prop->dmg, it->direction))
 				{
-					destroy = true;
+					destroy = true; //적들이 총알에 맞았을 때
 					break;
 				}
 			}
 		}
-		if (destroy) {
+		if (it->life <= 0 || destroy) {
 			bullet_instances.erase(it);
 		}
 	}
@@ -105,8 +105,9 @@ void update(float t)
 			enemy_list.erase(it);
 		}
 	}
-	cam.eye = vec3(crt.position + vec2(-5, 2), 15);
-	cam.at = vec3(crt.position + vec2(3, 2), 0);
+	
+	cam.eye = vec3(crt.position.x, 8, 20);
+	cam.at = vec3((crt.position.x + cam.at.x) / 2,7,0);
 	cam.view_matrix = mat4::look_at(cam.eye, cam.at, cam.up);
 
 	// update uniform variables in vertex/fragment shaders
@@ -286,9 +287,10 @@ bool user_init()
 
 	glBindVertexArray(vertex_array);
 
-	enemy_list.push_back(Enemy(&map, &crt, vec2(12, 6)));
-	enemy_list.push_back(Enemy(&map, &crt, vec2(14, 6)));
-	enemy_list.push_back(Enemy(&map, &crt, vec2(3, 6)));
+	enemy_list.push_back(Enemy(&map, &crt, vec2(18, 3)));
+	enemy_list.push_back(Enemy(&map, &crt, vec2(34, 6)));
+	enemy_list.push_back(Enemy(&map, &crt, vec2(29, 6)));
+	enemy_list.push_back(Enemy(&map, &crt, vec2(8, 3)));
 	return true;
 }
 

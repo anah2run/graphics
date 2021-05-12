@@ -24,6 +24,7 @@ public:
 	vec2 direction = vec2(0);
 	float speed = 0;
 	const BulletProp* prop;
+	float life = 3;
 	Bullet() {
 	}
 	Bullet(int bid, vec2 p, vec2 d) {
@@ -35,6 +36,7 @@ public:
 	void update(float t) {
 		if (prop->accel != 0) speed = std::min(speed + prop->accel, prop->max_spd);
 		position += speed * direction * t;
+		life = std::max(life - t, float(0));
 	}
 };
 std::list<Bullet> bullet_instances;
