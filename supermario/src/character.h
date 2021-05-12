@@ -24,6 +24,9 @@ public:
 };
 class Character {
 public:
+	~Character() {
+		printf("Character deleted\n");
+	}
 	Character() {
 	}
 	Character(Map* p, vec2 pos) {
@@ -44,7 +47,7 @@ public:
 	Hitbox	hitbox = Hitbox();	// 히트 박스
 	vec2	position;			// 위치	
 	vec2	velocity = vec2(0);
-	vec2	acceration = vec2(0);
+	vec2	acceleration = vec2(0);
 	int		hp = max_hp;		// 현재 체력
 	float	invinc_t = 0;		// 무적 타이머
 	bool	is_jump = true;		// 점프 상태
@@ -67,8 +70,10 @@ inline bool Character::hit(int damage, vec2 hit_pos) {
 	if (invinc_t <= 0) {
 		printf("took %d damage! hp: %d\n", damage, hp);
 		hp -= damage;
-		vec2 d = hit_pos.normalize();
-		velocity = d * 10 / mass;
+		if (length(hit_pos) > 0)
+		{
+			velocity = hit_pos.normalize() * 10 / mass;
+		}
 		invinc_t = invinc_time;
 		alive = !checkDeath();
 		return true;
@@ -94,23 +99,23 @@ inline void Character::physics(float t, bool moving)
 {
 	vec2 temp_pos = position;
 	if (is_jump) {
-		acceration.x *= 0.8f;
-		acceration.y = -mapp->gravity;
+		acceleration.x *= 0.8f;
+		acceleration.y = -mapp->gravity;
 		stand_blockp = 0;
 	}
 	else {
 		is_jump = checkJump();
-		acceration.y = 0;
+		acceleration.y = 0;
 		velocity.y = 0;
 		if (stand_blockp->prop->collid_dmg > 0) {
 			is_jump = true;
 			hit(stand_blockp->prop->collid_dmg, vec2(0, 1));
 		}
-		if (!moving) acceration.x = -velocity.x * 10;
-		else acceration.x = 0;
+		if (!moving) acceleration.x = -velocity.x * 10;
+		else acceleration.x = 0;
 	}
-	velocity += acceration * t;
-	position += velocity * t + acceration * powf(t, 2);
+	velocity += acceleration * t;
+	position += velocity * t + acceleration * powf(t, 2);
 	if (position.x - temp_pos.x >= 0) { //캐릭터가 오른쪽으로 움직임
 		int temp_pos_x = int(position.x + hitbox.box_rec.z);
 		for (int i = int(temp_pos.x + hitbox.box_rec.z); i <= temp_pos_x; i++)
@@ -189,7 +194,7 @@ inline void Character::move_right()
 	if (is_jump) {
 		if (velocity.x < max_speed/2)
 		{
-			acceration.x = max_speed*5;
+			acceleration.x = max_speed*5;
 		}
 	}
 	else
@@ -204,7 +209,7 @@ inline void Character::move_left()
 	if (is_jump ) {
 		if (velocity.x > -max_speed/2)
 		{
-			acceration.x = -max_speed*5;
+			acceleration.x = -max_speed*5;
 		}
 	}
 	else
@@ -234,8 +239,8 @@ public:
 	Enemy(Map* mp, Character* cp, vec2 pos) {
 		mass = 5;
 		invinc_time = 0;	// 피격 시 무적 시간
-		max_speed = 5.0f;	// 최대 이동속도
-		speed = 0.5f;
+		max_speed = 4.5f;	// 최대 이동속도
+		speed = 0.3f;
 		max_jump = 1.5f;	// 최대 점프
 		mapp = mp;
 		max_hp = 3;
