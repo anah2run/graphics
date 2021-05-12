@@ -45,9 +45,7 @@ std::vector<vertex>	unit_block_vertices;	// host-side vertices
 Map map(new_map);
 Character	crt(&map,vec2(2,2));
 Gun			gun(&crt, 0);
-Enemy enemy(&map, vec2(8, 6));
-Enemy enemy2(&map, vec2(14, 6));
-Enemy enemy3(&map, vec2(12, 9));
+std::list<Enemy> enemy_list;
 
 bool	b_key_fire = false;
 bool	b_key_right = false;
@@ -69,11 +67,12 @@ void update(float t)
 	else if (b_key_left) {
 		crt.move_left();
 	}
+	
+	crt.update(float(t), b_key_left || b_key_right);
 	gun.trigger(&b_key_fire, t);
 
 	// build bullets
-	std::list<Bullet>::iterator it;
-	for (it = bullet_instances.begin(); it != bullet_instances.end(); it++) {
+	for (std::list<Bullet>::iterator it = bullet_instances.begin(); it != bullet_instances.end(); it++) {
 		bool destroy = false;
 		it->update(t);
 		Block* bp = map.block(it->position);
@@ -84,16 +83,31 @@ void update(float t)
 				bp->hit(it->prop->block_dmg);
 			}
 		}
+		for (std::list<Enemy>::iterator eit = enemy_list.begin(); eit != enemy_list.end(); eit++) {
+			if (eit->hitbox.collid(it->position - eit->position)) {
+				if (eit->hit(it->prop->dmg, it->direction))
+				{
+					destroy = true;
+					break;
+				}
+			}
+		}
 		if (destroy) {
 			bullet_instances.erase(it);
 		}
 	}
-
+	for (std::list<Enemy>::iterator it = enemy_list.begin(); it != enemy_list.end(); it++) {
+		if (it->hitbox.collid(it->position - crt.position)) {
+			crt.hit(it->damage, it->position - crt.position);
+		}
+		it->update(t, true);
+		if (!(it->alive)) {
+			enemy_list.erase(it);
+		}
+	}
 	cam.eye = vec3(crt.position + vec2(-5, 2), 15);
 	cam.at = vec3(crt.position + vec2(3, 2), 0);
 	cam.view_matrix = mat4::look_at(cam.eye, cam.at, cam.up);
-	crt.update(float(t), b_key_left || b_key_right);
-	//enemy.update(float(t), true); enemy2.update(float(t), true); enemy3.update(float(t), true);
 
 	// update uniform variables in vertex/fragment shaders
 	GLint uloc;
@@ -103,6 +117,7 @@ void update(float t)
 
 void render()
 {
+	//printf("player: %f %f\n", crt.position.x, crt.position.y);
 
 	// clear screen (with background color) and clear depth buffer
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
@@ -153,26 +168,12 @@ void render()
 		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
 		glDrawElements(GL_TRIANGLES, 3 * 4 * 6, GL_UNSIGNED_INT, nullptr);
 	}
+	for (std::list<Enemy>::iterator it = enemy_list.begin(); it != enemy_list.end(); it++) {
+		model_matrix = mat4::translate(it->position.x - it->hitbox.width() / 2, it->position.y - it->hitbox.height() / 2, 0) * mat4::scale(it->hitbox.width(), it->hitbox.height(), 0.1f);
+		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
+		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
+	}
 
-/*
-	// build enemey model
-	model_matrix = mat4::translate(enemy.position.x, enemy.position.y, 0) * mat4::scale(float(enemy.hp) / float(enemy.max_hp), float(enemy.hp) / enemy.max_hp, float(enemy.hp) / enemy.max_hp);
-	uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
-	// per-circle draw calls
-	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
-
-	// build enemey model
-	model_matrix = mat4::translate(enemy2.position.x, enemy2.position.y, 0) * mat4::scale(float(enemy2.hp) / enemy2.max_hp, float(enemy2.hp) / enemy2.max_hp, float(enemy2.hp) / enemy2.max_hp);
-	uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
-	// per-circle draw calls
-	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
-
-	model_matrix = mat4::translate(enemy3.position.x, enemy3.position.y, 0) * mat4::scale(float(enemy3.hp) / enemy3.max_hp, float(enemy3.hp) / enemy3.max_hp, float(enemy3.hp) / enemy3.max_hp);
-	uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
-	// per-circle draw calls
-	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
-
-*/
 	// swap front and back buffers, and display to screen
 	glfwSwapBuffers( window );
 }
@@ -285,6 +286,9 @@ bool user_init()
 
 	glBindVertexArray(vertex_array);
 
+	enemy_list.push_back(Enemy(&map, &crt, vec2(12, 6)));
+	enemy_list.push_back(Enemy(&map, &crt, vec2(14, 6)));
+	enemy_list.push_back(Enemy(&map, &crt, vec2(3, 6)));
 	return true;
 }
 
