@@ -157,4 +157,14 @@ public:
 			}
 		}
 	}
+	int shadow_pos(vec2 pos) {
+		int x = int(pos.x);
+		if (x < 0 || x >= MAP_WIDTH) return 0;
+		for (int y = std::min(int(pos.y), int(MAP_HEIGHT - 1)); y >= 0; y--) {
+			if (map[x][y].prop->block_id > 0) {
+				return y + 1;
+			}
+		}
+		return -1;
+	}
 };

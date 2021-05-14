@@ -20,8 +20,11 @@ out vec4 fragColor;
 void main()
 {
 	if(texture_id == 1){
-
-		fragColor = texture( SPRITE_CRT, tc );
+		fragColor = vec4(normalize(norm), 1.0);
+		//fragColor = texture( SPRITE_CRT, tc );
+	}
+	else if(texture_id == -1){
+		fragColor = vec4(0,0,0,0.1f);
 	}
 	else{
 		fragColor = vec4(normalize(norm), 1.0);

@@ -39,6 +39,7 @@ ivec2		window_size = cg_default_window_size(); // initial window size
 GLuint	program	= 0;	// ID holder for GPU program
 GLuint	sprite_vertex_array = 0;
 GLuint	cube_vertex_array = 0;
+GLuint	circle_vertex_array = 0;
 GLuint	SPRITE_CRT = 0;
 //*************************************
 // global variables
@@ -158,6 +159,17 @@ void render()
 		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
 	}
 
+	glBindVertexArray(circle_vertex_array);
+	int temp_y = map.shadow_pos(crt.position);
+	uloc = glGetUniformLocation(program, "texture_id");		if (uloc > -1) glUniform1i(uloc, -1);
+	if (temp_y >= 0){
+		
+		model_matrix = mat4::translate(crt.position.x, temp_y + 0.05f, 0) * mat4::scale(crt.hitbox.width()/2, 0, crt.hitbox.width()/2);
+		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
+		glDrawElements(GL_TRIANGLES,6*32, GL_UNSIGNED_INT, nullptr);
+	}
+
+	uloc = glGetUniformLocation(program, "texture_id");		if (uloc > -1) glUniform1i(uloc, 0);
 	glBindVertexArray(cube_vertex_array);
 	// build the model matrix for map
 	for (int i = 0; i < MAP_WIDTH; i++) {
@@ -292,6 +304,7 @@ bool user_init()
 	// create vertex buffer
 	update_vertex_buffer(create_block_vertices(), block_indices, &cube_vertex_array);
 	update_vertex_buffer(sprite_vertices, sprite_indices, &sprite_vertex_array);
+	update_vertex_buffer(create_circle_vertices(32), circle_indices, &circle_vertex_array);
 	
 	enemy_list.push_back(Enemy(&map, &crt, vec2(18, 3)));
 	enemy_list.push_back(Enemy(&map, &crt, vec2(34, 6)));
