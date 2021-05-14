@@ -1,9 +1,11 @@
+#define STB_IMAGE_IMPLEMENTATION
+
 #include "cgmath.h"		// slee's simple math library
 #include "cgut.h"		// slee's OpenGL utility
 #include "map.h"
 #include "character.h"
 #include "gun.h"
-
+#include "sprite.h"
 //*************************************
 // global constants
 static const char*	window_name = "cgbase - trackball";
@@ -35,13 +37,13 @@ ivec2		window_size = cg_default_window_size(); // initial window size
 //*************************************
 // OpenGL objects
 GLuint	program	= 0;	// ID holder for GPU program
-GLuint	vertex_array = 0;	// ID holder for vertex array object
-
+GLuint	sprite_vertex_array = 0;
+GLuint	cube_vertex_array = 0;
+GLuint	SPRITE_CRT = 0;
 //*************************************
 // global variables
 int		frame = 0;				// index of rendering frames
 // holder of vertices and indices of a unit circle
-std::vector<vertex>	unit_block_vertices;	// host-side vertices
 Map map(new_map);
 Character	crt(&map,vec2(1,3));
 Gun			gun(&crt, 0);
@@ -118,26 +120,45 @@ void update(float t)
 
 void render()
 {
-	//printf("player: %f %f\n", crt.position.x, crt.position.y);
-
 	// clear screen (with background color) and clear depth buffer
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
 	// notify GL that we use our own program
 	glUseProgram( program );
 
-	// build bullets
-	std::list<Bullet>::iterator it;
-	for (it = bullet_instances.begin(); it != bullet_instances.end(); it++) {
-		mat4 model_matrix = mat4::translate(it->position.x, it->position.y, 0) * mat4::scale(0.2f,0.2f,0.2f);
-
-		GLint uloc;
-		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
-		glDrawElements(GL_TRIANGLES, 3*4*6, GL_UNSIGNED_INT, nullptr);
-	}
-
 	GLint uloc;
 	mat4 model_matrix;
+	
+	glBindVertexArray(sprite_vertex_array);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, SPRITE_CRT);
+	glUniform1i(glGetUniformLocation(program, "SPRITE_CRT"), 0);
+	uloc = glGetUniformLocation(program, "texture_id");		if (uloc > -1) glUniform1i(uloc, 1);
+
+	// build character model
+	if (crt.invinc_t <= 0 || int(crt.invinc_t * 10) % 2 == 0) {
+		model_matrix = mat4::translate(crt.position.x, crt.position.y, 0) * mat4::scale(crt.hitbox.width(), crt.hitbox.height(), 1);
+		uloc = glGetUniformLocation(program, "direction");		if (uloc > -1) glUniform2i(uloc, int(crt.direction.x), int(crt.direction.y));
+		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
+		glDrawElements(GL_TRIANGLES, 12 , GL_UNSIGNED_INT, nullptr);
+	}
+	for (std::list<Enemy>::iterator it = enemy_list.begin(); it != enemy_list.end(); it++) {
+		model_matrix = mat4::translate(it->position.x, it->position.y, 0) * mat4::scale(it->hitbox.width(), it->hitbox.height(), 1);
+		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
+		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
+	}
+	
+	// build bullets
+	uloc = glGetUniformLocation(program, "texture_id");		if (uloc > -1) glUniform1i(uloc, 0);
+	std::list<Bullet>::iterator it;
+	for (it = bullet_instances.begin(); it != bullet_instances.end(); it++) {
+		model_matrix = mat4::translate(it->position.x, it->position.y, 0) * mat4::scale(0.2f, 0.2f, 1);
+		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
+		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
+	}
+
+	glBindVertexArray(cube_vertex_array);
 	// build the model matrix for map
 	for (int i = 0; i < MAP_WIDTH; i++) {
 		for (int j = 0; j < MAP_HEIGHT; j++) {
@@ -161,18 +182,6 @@ void render()
 				
 			}
 		}
-	}
-
-	// build character model
-	if (crt.invinc_t <= 0 || int(crt.invinc_t*10) % 2 == 0) {
-		model_matrix = mat4::translate(crt.position.x - crt.hitbox.width() / 2, crt.position.y - crt.hitbox.height() / 2, 0) * mat4::scale(crt.hitbox.width(), crt.hitbox.height(),0.1f);
-		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
-		glDrawElements(GL_TRIANGLES, 3 * 4 * 6, GL_UNSIGNED_INT, nullptr);
-	}
-	for (std::list<Enemy>::iterator it = enemy_list.begin(); it != enemy_list.end(); it++) {
-		model_matrix = mat4::translate(it->position.x - it->hitbox.width() / 2, it->position.y - it->hitbox.height() / 2, 0) * mat4::scale(it->hitbox.width(), it->hitbox.height(), 0.1f);
-		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
-		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
 	}
 
 	// swap front and back buffers, and display to screen
@@ -239,7 +248,7 @@ void motion( GLFWwindow* window, double x, double y )
 {
 }
 
-void update_vertex_buffer(const std::vector<vertex>& vertices)
+void update_vertex_buffer(const std::vector<vertex>& vertices, std::vector<uint>& indices, GLuint* v_array)
 {
 	static GLuint vertex_buffer = 0;	// ID holder for vertex buffer
 	static GLuint index_buffer = 0;		// ID holder for index buffer
@@ -249,9 +258,6 @@ void update_vertex_buffer(const std::vector<vertex>& vertices)
 
 	// check exceptions
 	if (vertices.empty()) { printf("[error] vertices is empty.\n"); return; }
-
-	// create buffers
-	std::vector<uint> indices = block_indices;
 	
 	// generation of vertex buffer: use vertices as it is
 	glGenBuffers(1, &vertex_buffer);
@@ -264,9 +270,9 @@ void update_vertex_buffer(const std::vector<vertex>& vertices)
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint) * indices.size(), &indices[0], GL_STATIC_DRAW);
 
 	// generate vertex array object, which is mandatory for OpenGL 3.3 and higher
-	if (vertex_array) glDeleteVertexArrays(1, &vertex_array);
-	vertex_array = cg_create_vertex_array(vertex_buffer, index_buffer);
-	if (!vertex_array) { printf("%s(): failed to create vertex aray\n", __func__); return; }
+	if (*v_array) glDeleteVertexArrays(1, v_array);
+	*v_array = cg_create_vertex_array(vertex_buffer, index_buffer);
+	if (!*v_array) { printf("%s(): failed to create vertex aray\n", __func__); return; }
 }
 
 bool user_init()
@@ -278,19 +284,22 @@ bool user_init()
 	glClearColor( 39/255.0f, 40/255.0f, 34/255.0f, 1.0f );	// set clear color
 	glEnable( GL_CULL_FACE );								// turn on backface culling
 	glEnable( GL_DEPTH_TEST );								// turn on depth tests	
-
-	// define the position of four corner vertices
-	unit_block_vertices = std::move(create_block_vertices());
+	glEnable(GL_TEXTURE_2D);			// enable texturing
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glActiveTexture(GL_TEXTURE0);		// notify GL the current texture slot is 0
 
 	// create vertex buffer
-	update_vertex_buffer(unit_block_vertices);
-
-	glBindVertexArray(vertex_array);
-
+	update_vertex_buffer(create_block_vertices(), block_indices, &cube_vertex_array);
+	update_vertex_buffer(sprite_vertices, sprite_indices, &sprite_vertex_array);
+	
 	enemy_list.push_back(Enemy(&map, &crt, vec2(18, 3)));
 	enemy_list.push_back(Enemy(&map, &crt, vec2(34, 6)));
 	enemy_list.push_back(Enemy(&map, &crt, vec2(29, 6)));
 	enemy_list.push_back(Enemy(&map, &crt, vec2(8, 3)));
+
+	// texture
+	SPRITE_CRT = cg_create_texture("../bin/textures/Biker_run.png", true); if (!SPRITE_CRT) return false;
 	return true;
 }
 

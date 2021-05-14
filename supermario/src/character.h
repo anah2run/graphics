@@ -30,8 +30,10 @@ public:
 		mapp = p;
 		position = pos;
 	}
-	bool	alive = true;		// 생존
+	int		sprite_index = 0;
+	int		status = 0;
 
+	bool	alive = true;		// 생존
 	float	invinc_time = 1.5f;	// 피격 시 무적 시간
 	float	max_speed = 5.0f;	// 최대 이동속도
 	float	speed = 1.0f;		// 이동 가속도
@@ -93,7 +95,7 @@ inline bool Character::checkJump() {
 	vec2 stand_block_pos = position - vec2(0, 1);
 	//printf("check jump : %f %f \n",stand_block_pos.x,position.y);
 	stand_blockp = mapp->block(stand_block_pos);
-	if (stand_blockp == 0) return 0;
+	if (stand_blockp == 0) return 1;
 	return stand_blockp->prop->block_id == 0;
 }
 inline void Character::physics(float t, bool moving)
@@ -103,12 +105,13 @@ inline void Character::physics(float t, bool moving)
 		acceleration.x *= 0.8f;
 		acceleration.y = -mapp->gravity;
 		stand_blockp = 0;
+		alive = !checkDeath();
 	}
 	else {
 		is_jump = checkJump();
 		acceleration.y = 0;
 		velocity.y = 0;
-		if (stand_blockp->prop->collid_dmg > 0) {
+		if (stand_blockp != 0 && stand_blockp->prop->collid_dmg > 0) {
 			is_jump = true;
 			hit(stand_blockp->prop->collid_dmg, vec2(0, 1));
 		}

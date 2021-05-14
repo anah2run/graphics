@@ -37,6 +37,9 @@
     <ClInclude Include="gun.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="sprite.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\bin\shaders\trackball.vert">

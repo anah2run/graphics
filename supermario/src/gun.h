@@ -24,7 +24,7 @@ public:
 	vec2 direction = vec2(0);
 	float speed = 0;
 	const BulletProp* prop;
-	float life = 3;
+	float life = 1.5f;
 	Bullet() {
 	}
 	Bullet(int bid, vec2 p, vec2 d) {
