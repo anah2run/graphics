@@ -96,7 +96,7 @@ void update(float t)
 			}
 		}
 		if (it->life <= 0 || destroy) {
-			bullet_instances.erase(it);
+			it = bullet_instances.erase(it);
 		}
 	}
 	for (std::list<Enemy>::iterator it = enemy_list.begin(); it != enemy_list.end(); it++) {
@@ -105,14 +105,13 @@ void update(float t)
 		}
 		it->update(t, true);
 		if (!(it->alive)) {
-			enemy_list.erase(it);
+			it=enemy_list.erase(it);
 		}
 	}
 	
 	cam.eye = vec3(crt.position.x, 8, 20);
 	cam.at = vec3((crt.position.x + cam.at.x) / 2,7,0);
 	cam.view_matrix = mat4::look_at(cam.eye, cam.at, cam.up);
-
 	// update uniform variables in vertex/fragment shaders
 	GLint uloc;
 	uloc = glGetUniformLocation( program, "view_matrix" );			if(uloc>-1) glUniformMatrix4fv( uloc, 1, GL_TRUE, cam.view_matrix );
@@ -130,48 +129,9 @@ void render()
 	GLint uloc;
 	mat4 model_matrix;
 	
-	glBindVertexArray(sprite_vertex_array);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, SPRITE_CRT);
-	glUniform1i(glGetUniformLocation(program, "SPRITE_CRT"), 0);
-	uloc = glGetUniformLocation(program, "texture_id");		if (uloc > -1) glUniform1i(uloc, 1);
-
-	// build character model
-	if (crt.invinc_t <= 0 || int(crt.invinc_t * 10) % 2 == 0) {
-		model_matrix = mat4::translate(crt.position.x, crt.position.y, 0) * mat4::scale(crt.hitbox.width(), crt.hitbox.height(), 1);
-		uloc = glGetUniformLocation(program, "direction");		if (uloc > -1) glUniform2i(uloc, int(crt.direction.x), int(crt.direction.y));
-		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
-		glDrawElements(GL_TRIANGLES, 12 , GL_UNSIGNED_INT, nullptr);
-	}
-	for (std::list<Enemy>::iterator it = enemy_list.begin(); it != enemy_list.end(); it++) {
-		model_matrix = mat4::translate(it->position.x, it->position.y, 0) * mat4::scale(it->hitbox.width(), it->hitbox.height(), 1);
-		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
-		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
-	}
-	
-	// build bullets
-	uloc = glGetUniformLocation(program, "texture_id");		if (uloc > -1) glUniform1i(uloc, 0);
-	std::list<Bullet>::iterator it;
-	for (it = bullet_instances.begin(); it != bullet_instances.end(); it++) {
-		model_matrix = mat4::translate(it->position.x, it->position.y, 0) * mat4::scale(0.2f, 0.2f, 1);
-		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
-		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
-	}
-
-	glBindVertexArray(circle_vertex_array);
-	int temp_y = map.shadow_pos(crt.position);
-	uloc = glGetUniformLocation(program, "texture_id");		if (uloc > -1) glUniform1i(uloc, -1);
-	if (temp_y >= 0){
-		
-		model_matrix = mat4::translate(crt.position.x, temp_y + 0.05f, 0) * mat4::scale(crt.hitbox.width()/2, 0, crt.hitbox.width()/2);
-		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
-		glDrawElements(GL_TRIANGLES,6*32, GL_UNSIGNED_INT, nullptr);
-	}
-
+	// 맵
 	uloc = glGetUniformLocation(program, "texture_id");		if (uloc > -1) glUniform1i(uloc, 0);
 	glBindVertexArray(cube_vertex_array);
-	// build the model matrix for map
 	for (int i = 0; i < MAP_WIDTH; i++) {
 		for (int j = 0; j < MAP_HEIGHT; j++) {
 			int block_id = map.map[i][j].prop->block_id;
@@ -182,7 +142,7 @@ void render()
 				switch (block_id) {
 				case 2:
 				case 5://wood & spike
-					scale_matrix = mat4::scale(1,1,float(bp->hp) / bp->prop->max_hp);
+					scale_matrix = mat4::scale(1, 1, float(bp->hp) / bp->prop->max_hp);
 					break;
 				default://wall
 					break;
@@ -191,10 +151,58 @@ void render()
 				uloc = glGetUniformLocation(program, "model_matrix");
 				if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
 				glDrawElements(GL_TRIANGLES, 3 * 4 * 6, GL_UNSIGNED_INT, nullptr);
-				
+
 			}
 		}
 	}
+
+	// 그림자 
+	glBindVertexArray(circle_vertex_array);
+	int temp_y = map.shadow_pos(crt.position);
+	uloc = glGetUniformLocation(program, "texture_id");		if (uloc > -1) glUniform1i(uloc, -1);
+	if (temp_y >= 0) {
+
+		model_matrix = mat4::translate(crt.position.x, temp_y + 0.01f, 0) * mat4::scale(crt.hitbox.width() / 2, 0, crt.hitbox.width() / 2);
+		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
+		glDrawElements(GL_TRIANGLES, 6 * 32, GL_UNSIGNED_INT, nullptr);
+	}
+	for (std::list<Enemy>::iterator it = enemy_list.begin(); it != enemy_list.end(); it++) {
+		temp_y = map.shadow_pos(it->position);
+		model_matrix = mat4::translate(it->position.x, temp_y + 0.01f, 0) * mat4::scale(it->hitbox.width() / 2, 0, it->hitbox.width() / 2);
+		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
+		glDrawElements(GL_TRIANGLES, 6 * 32, GL_UNSIGNED_INT, nullptr);
+	}
+	
+	// 캐릭터
+	glBindVertexArray(sprite_vertex_array);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, SPRITE_CRT);
+	glUniform1i(glGetUniformLocation(program, "SPRITE_CRT"), 0);
+	uloc = glGetUniformLocation(program, "texture_id");		if (uloc > -1) glUniform1i(uloc, 0);
+	for (std::list<Enemy>::iterator it = enemy_list.begin(); it != enemy_list.end(); it++) {
+		model_matrix = mat4::translate(it->position.x, it->position.y, -.01f) * mat4::scale(1, 1, 1);
+		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
+		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
+	}
+	uloc = glGetUniformLocation(program, "texture_id");		if (uloc > -1) glUniform1i(uloc, 1);
+	uloc = glGetUniformLocation(program, "animation");		if (uloc > -1) glUniform4i(uloc, 0, 0, crt.max_frame, crt.frame); // sprite_id, status, max_frame, frame;
+	// build character model
+	if (crt.invinc_t <= 0 || int(crt.invinc_t * 10) % 2 == 0) {
+		model_matrix = mat4::translate(crt.position.x, crt.position.y, 0) * mat4::scale(crt.direction.x, 1, 1);
+		uloc = glGetUniformLocation(program, "direction");		if (uloc > -1) glUniform2i(uloc, int(crt.direction.x), int(crt.direction.y));
+		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
+		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
+	}
+
+	// build bullets
+	uloc = glGetUniformLocation(program, "texture_id");		if (uloc > -1) glUniform1i(uloc, 0);
+	std::list<Bullet>::iterator it;
+	for (it = bullet_instances.begin(); it != bullet_instances.end(); it++) {
+		model_matrix = mat4::translate(it->position.x, it->position.y, 0) * mat4::scale(0.2f, 0.2f, 1);
+		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
+		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
+	}
+
 
 	// swap front and back buffers, and display to screen
 	glfwSwapBuffers( window );
@@ -294,7 +302,7 @@ bool user_init()
 
 	// init GL states
 	glClearColor( 39/255.0f, 40/255.0f, 34/255.0f, 1.0f );	// set clear color
-	glEnable( GL_CULL_FACE );								// turn on backface culling
+	//glEnable( GL_CULL_FACE );								// turn on backface culling
 	glEnable( GL_DEPTH_TEST );								// turn on depth tests	
 	glEnable(GL_TEXTURE_2D);			// enable texturing
 	glEnable(GL_BLEND);
@@ -306,10 +314,12 @@ bool user_init()
 	update_vertex_buffer(sprite_vertices, sprite_indices, &sprite_vertex_array);
 	update_vertex_buffer(create_circle_vertices(32), circle_indices, &circle_vertex_array);
 	
-	enemy_list.push_back(Enemy(&map, &crt, vec2(18, 3)));
-	enemy_list.push_back(Enemy(&map, &crt, vec2(34, 6)));
-	enemy_list.push_back(Enemy(&map, &crt, vec2(29, 6)));
-	enemy_list.push_back(Enemy(&map, &crt, vec2(8, 3)));
+	enemy_list = {
+		Enemy(&map, &crt, vec2(18, 3)),
+		Enemy(&map, &crt, vec2(34, 6)),
+		Enemy(&map, &crt, vec2(29, 6)),
+		Enemy(&map, &crt, vec2(8, 3))
+	};
 
 	// texture
 	SPRITE_CRT = cg_create_texture("../bin/textures/Biker_run.png", true); if (!SPRITE_CRT) return false;

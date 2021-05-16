@@ -30,8 +30,14 @@ public:
 		mapp = p;
 		position = pos;
 	}
+	// 애니메이션 관련
 	int		sprite_index = 0;
 	int		status = 0;
+	int		frame = 0;
+	int		max_frame = 6;
+	float	frame_interval = 0.1f;
+	float	frame_t = 0;
+	//
 
 	bool	alive = true;		// 생존
 	float	invinc_time = 1.5f;	// 피격 시 무적 시간
@@ -196,6 +202,22 @@ inline void Character::update(float t, bool moving)
 {
 	invinc_t = std::max(invinc_t - t, 0.0f);
 	physics(t, moving);
+	int temp_status = 0;
+	if (is_jump) temp_status = 2;
+	else if (moving) temp_status = 1;
+	
+	if (temp_status != status) {
+		frame = 0;
+		frame_t = 0;
+		status = temp_status;
+	}
+	else
+	{
+		frame_t += t;
+		int temp_frame = int(frame_t / frame_interval);
+		frame_t -= frame_interval * temp_frame;
+		frame = (frame + temp_frame) % max_frame;
+	}
 }
 
 
@@ -254,7 +276,7 @@ public:
 		speed = 0.3f;
 		max_jump = 1.5f;	// 최대 점프
 		mapp = mp;
-		max_hp = 10;
+		max_hp = 3;
 		hp = max_hp;
 		position = pos;
 		crt = cp;
