@@ -1,7 +1,6 @@
 #pragma once
-#include "map.h"
 #include <cmath>
-
+class Map;
 class Hitbox {
 public:
 	vec4	box_rec = { -0.3f, -0.5f, 0.3f, 0.5f };	// rectangle margin

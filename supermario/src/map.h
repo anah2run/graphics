@@ -1,13 +1,16 @@
 #pragma once
+class Item;
 static const uint MAP_WIDTH = 100;	// ¸Ê ³ÐÀÌ
 static const uint MAP_HEIGHT = 50;	// ¸Ê ³ôÀÌ
 int new_map[MAP_WIDTH][MAP_HEIGHT] = {
+		{1,1,1,1,1,1,1,1,1,1,1,1,1,},
+		{1,1,1,},
 		{1,1,1,}, //0
 		{1,1,1,},
 		{1,1,1,},
-		{1,1,1,0,0,2,},
-		{1,1,1,0,0,2,0,2},
-		{1,1,1,0,0,2,},
+		{1,1,1,0,0,42,},
+		{1,1,1,0,0,22,0,2},
+		{1,1,1,0,0,32,},
 		{1,1,1,},
 		{1,1,1,},
 		{1,1,1,},
@@ -84,18 +87,28 @@ public:
 		hp = prop->max_hp;
 	}
 	const BlockProp* prop;
+	int x;
+	int y;
 	int hp;
+	int item = -1; // when less than zero it gives no item
 	Block() {
 		swap_block(0);
 	}
-	Block(int i) {
+	Block(int i, int x, int y) {
 		swap_block(i);
+		this->x = x;
+		this->y = y;
 	}
 	bool checkDestroy() {
 		return  hp <= 0;
 	}	
 	void destroy() {
 		swap_block(0);//change block to air
+		if (item > 0) {
+			item_list.push_back(Item(item, vec2(x + .5f, y + .5f)));
+			printf("item dropped!\n");
+		}
+
 	}
 	void hit(int damage) {
 		printf("hp: %d, damaged %d. now %d\n", hp, damage, hp - damage);
@@ -151,9 +164,12 @@ public:
 	Map() {
 	}
 	Map(int (*input)[MAP_HEIGHT]) {
+		int temp;
 		for (int i = 0; i < MAP_WIDTH; i++) {
 			for (int j = 0; j < MAP_HEIGHT; j++) {
-				map[i][j] = Block(input[i][j]);
+				temp = input[i][j];
+				map[i][j] = Block(temp%10,i,j);
+				if (temp / 10 > 0 ) map[i][j].item = temp/10;
 			}
 		}
 	}

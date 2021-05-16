@@ -1,5 +1,5 @@
 #pragma once
-#include "character.h"
+class Character;
 
 struct BulletProp {
 	int bullet_id = -1;

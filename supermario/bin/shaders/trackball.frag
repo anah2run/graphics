@@ -7,7 +7,7 @@
 
 //texture
 uniform sampler2D	SPRITE_CRT;
-uniform int			texture_id;
+uniform int			mode;
 uniform vec2		direction;
 uniform ivec4		animation; // sprite_id, status, max_frame, frame;
 // input from vertex shader
@@ -19,14 +19,14 @@ out vec4 fragColor;
 
 void main()
 {
-	if(texture_id == 1){
-		//fragColor = vec4(normalize(norm), 1.0);
-		fragColor = texture( SPRITE_CRT, vec2((animation.a + tc.x)/ animation.z ,tc.y * 0.8f));
+	if(mode == 1){
+		//fragColor = vec4(normalize(norm), 1.0f);
+		fragColor = texture( SPRITE_CRT, vec2((animation.a + (tc.x*0.8f))/ animation.z ,tc.y * 0.8f));
 	}
-	else if(texture_id == -1){
+	else if(mode == -1){ //shadow
 		fragColor = vec4(0,0,0,0.5f);
 	}
 	else{
-		fragColor = vec4(normalize(norm), 1.0);
+		fragColor = vec4(normalize(norm), 1.0f);
 	}
 }
