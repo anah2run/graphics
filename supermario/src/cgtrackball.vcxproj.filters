@@ -55,6 +55,9 @@
     <ClInclude Include="light.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="map_pack.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\bin\shaders\trackball.vert">

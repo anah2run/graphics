@@ -76,7 +76,6 @@ public:
 
 inline bool Character::hit(int damage, vec2 hit_pos) {
 	if (invinc_t <= 0) {
-		printf("took %d damage! hp: %d\n", damage, hp);
 		hp -= damage;
 		particles_list.push_back(Particle(0, position));
 		if (length(hit_pos) > 0)
@@ -111,6 +110,7 @@ inline bool Character::checkJump() {
 }
 inline void Character::physics(float t, bool moving)
 {
+	bool burned = false;
 	vec2 temp_pos = position;
 	if (is_jump) {
 		acceleration.x *= 0.8f;
@@ -123,8 +123,8 @@ inline void Character::physics(float t, bool moving)
 		acceleration.y = 0;
 		velocity.y = 0;
 		if (stand_blockp != 0 && stand_blockp->prop->collid_dmg > 0) {
-			is_jump = true;
-			hit(stand_blockp->prop->collid_dmg, vec2(0, 1));
+			burned = hit(stand_blockp->prop->collid_dmg, vec2(0, 1));
+			is_jump = burned;
 		}
 		if (!moving) acceleration.x = -velocity.x * 10;
 		else acceleration.x = 0;
@@ -140,7 +140,7 @@ inline void Character::physics(float t, bool moving)
 			if (bp->prop->block_id > 0) {
 				position.x = i - hitbox.box_rec.z;
 				if (bp->prop->collid_dmg > 0) {
-					hit(bp->prop->collid_dmg, vec2(-1, 0));
+					burned = burned || hit(bp->prop->collid_dmg, vec2(-1, 0));
 				}
 				break;
 			}
@@ -155,7 +155,7 @@ inline void Character::physics(float t, bool moving)
 			if (bp->prop->block_id > 0) {
 				position.x = i + 1 - hitbox.box_rec.x;
 				if (bp->prop->collid_dmg > 0) {
-					hit(bp->prop->collid_dmg, vec2(1, 0));
+					burned = burned || hit(bp->prop->collid_dmg, vec2(1, 0));
 				}
 				break;
 			}
@@ -176,7 +176,10 @@ inline void Character::physics(float t, bool moving)
 					position.y = i - hitbox.box_rec.a;
 					velocity.y = 0; // 천장 부딫힘
 					if (bp->prop->collid_dmg > 0) {
-						hit(bp->prop->collid_dmg, vec2(0, -1));
+						burned = burned || hit(bp->prop->collid_dmg, vec2(0, -1));
+					}
+					else {
+						engine->play2D(mp3_src_blockhit); //sfx
 					}
 					break;
 				}
@@ -191,7 +194,8 @@ inline void Character::physics(float t, bool moving)
 				if (bp->prop->block_id > 0) {
 					position.y = i + 1 - hitbox.box_rec.y;
 					if (bp->prop->collid_dmg > 0) {
-						is_jump = hit(bp->prop->collid_dmg, vec2(0, 1));
+						burned = burned || hit(bp->prop->collid_dmg, vec2(0, -1));
+						is_jump = burned;
 					}
 					else {
 						is_jump = false;
@@ -201,6 +205,7 @@ inline void Character::physics(float t, bool moving)
 			}
 		}
 	}
+	if(burned) engine->play2D(mp3_src_burned);
 }
 inline void Character::update_status(float t, bool moving) {
 	int temp_status = 0;
@@ -279,7 +284,7 @@ class Enemy : public Character
 {
 public:
 	Character* crt;
-	float	active_range = 7;	// 인식 반경 (x축)
+	float	active_range = 8;	// 인식 반경 (x축)
 	float	action_timer = 0;	// 행동 대기 시간
 	int		damage = 1;
 	bool	active = false;
@@ -287,8 +292,9 @@ public:
 		printf("Enemy died\n");
 	}
 	Enemy(Map* mp, Character* cp, vec2 pos) {
-		mass = 3;
-		invinc_time = 0;	// 피격 시 무적 시간
+		mass = 2;
+		invinc_time = 0.05f;	// 피격 시 무적 시간
+		direction = vec2(-1, 0);
 		max_speed = 4.5f;	// 최대 이동속도
 		speed = 0.3f;
 		max_jump = 1.5f;	// 최대 점프
@@ -306,7 +312,10 @@ inline bool Enemy::check_active() {
 	return active || hp < max_hp || length(crt->position - position) < active_range;
 }
 inline void Enemy::update(float t, bool moving) {
+	invinc_t = std::max(invinc_t - t, 0.0f);
+	action_timer = std::max(action_timer - t, 0.0f);
 	physics(t, active);
+
 	update_status(t, active);
 	if (active) {
 		move();
@@ -322,7 +331,8 @@ inline void Enemy::move() {
 	else {
 		move_left();
 	}
-	if (crt->position.y > position.y) {
+	if (action_timer <= 0 && crt->position.y > position.y) {
 		jump();
+		action_timer = random_range(0.2f,1);
 	}
 }

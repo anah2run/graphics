@@ -15,4 +15,4 @@ public:
 		position = pos;
 	}
 };
-std::list<Item> item_list = {Item(1, vec2(10.5f,7.5f))};
+std::list<Item> item_list = {};

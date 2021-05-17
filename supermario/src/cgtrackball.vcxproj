@@ -64,6 +64,7 @@
     <ClInclude Include="map.h" />
     <ClInclude Include="cgmath.h" />
     <ClInclude Include="cgut.h" />
+    <ClInclude Include="map_pack.h" />
     <ClInclude Include="particle.h" />
     <ClInclude Include="skybox.h" />
     <ClInclude Include="sound.h" />

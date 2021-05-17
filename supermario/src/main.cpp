@@ -63,11 +63,10 @@ GLuint	TEX_BLOCKS_OP = 0;
 // global variables
 int		frame = 0;				// index of rendering frames
 // holder of vertices and indices of a unit circle
-Map map(new_map);
-Character	crt(&map,vec2(4,3));
-Gun			gun(&crt, 0);
+Map map;
 std::list<Enemy> enemy_list;
-
+Character	crt;
+Gun			gun(&crt, 0);
 bool	b_key_fire = false;
 bool	b_key_right = false;
 bool	b_key_left = false;
@@ -152,7 +151,7 @@ void update(float t)
 	}
 	for (std::list<Enemy>::iterator it = enemy_list.begin(); it != enemy_list.end(); it++) {
 		if (it->hitbox.collid(it->position - crt.position)) {
-			crt.hit(it->damage, it->position - crt.position);
+			if(crt.hit(it->damage, it->position - crt.position)) engine->play2D(mp3_src_scream); // 플레이어 비명
 		}
 		it->update(t, true);
 		if (!(it->alive)) {
@@ -193,7 +192,7 @@ void update(float t)
 
 	// camera & skybox
 	float temp_x = crt.position.x;
-	temp_x = std::min(std::max(temp_x, 10.0f), 60.0f);
+	temp_x = std::min(std::max(temp_x, 10.0f), map.map_width -5.0f);
 	cam.eye = vec3(temp_x, 7, 13);
 	cam.at = vec3(temp_x,7,0);
 	cam.view_matrix = mat4::look_at(cam.eye, cam.at, cam.up);
@@ -341,8 +340,9 @@ void render()
 	// sprite animation part
 	uloc = glGetUniformLocation(program, "mode");		if (uloc > -1) glUniform1i(uloc, 3);
 	// render enemies
+	int temp_z = 0;
 	for (std::list<Enemy>::iterator it = enemy_list.begin(); it != enemy_list.end(); it++) {
-		model_matrix = mat4::translate(it->position.x, it->position.y, -.05f) * mat4::scale(it->direction.x, 1, 1);
+		model_matrix = mat4::translate(it->position.x, it->position.y, ++temp_z*.01f) * mat4::scale(it->direction.x, 1, 1);
 		uloc = glGetUniformLocation(program, "model_matrix");	if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
 		uloc = glGetUniformLocation(program, "animation");		if (uloc > -1) glUniform4i(uloc, 1, it->status, max_frame[it->status], it->frame); // sprite_id, status, max_frame, frame;	
 		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
@@ -350,7 +350,7 @@ void render()
 
 	// build character model
 	if (crt.invinc_t <= 0 || int(crt.invinc_t * 10) % 2 == 0) {
-		model_matrix = mat4::translate(crt.position.x, crt.position.y, 0) * mat4::scale(crt.direction.x, 1, 1);
+		model_matrix = mat4::translate(crt.position.x, crt.position.y, ++temp_z * .01f) * mat4::scale(crt.direction.x, 1, 1);
 		uloc = glGetUniformLocation(program, "model_matrix");	if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
 		uloc = glGetUniformLocation(program, "animation");		if (uloc > -1) glUniform4i(uloc, 0, crt.status, max_frame[crt.status], crt.frame); // sprite_id, status, max_frame, frame;	
 		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
@@ -496,13 +496,17 @@ bool user_init()
 	// sound
 	init_sound();
 
-	//
-	enemy_list = {
-		Enemy(&map, &crt, vec2(22, 3)),
-		Enemy(&map, &crt, vec2(38, 6)),
-		Enemy(&map, &crt, vec2(33, 6)),
-		Enemy(&map, &crt, vec2(12, 3))
-	};
+	// load map
+	map = Map(new_map1, 100, vec2(4, 3), new_map1_enemies, new_map1_items);
+	crt = Character(&map, map.crt_start_pos);
+	enemy_list = {};
+	for (auto pos : new_map1_enemies) {
+		enemy_list.push_back(Enemy(&map, &crt, pos));
+	}
+	item_list = {};
+	for (auto item : new_map1_items) {
+		item_list.push_back(item);
+	}
 
 	// texture
 	TEX_SKYBOX = cg_create_texture(skybox_image_path, true);  if (!TEX_SKYBOX) return false;

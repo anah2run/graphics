@@ -1,76 +1,9 @@
 #pragma once
 #include "particle.h"
+#include "map_pack.h"
 static const char* blocks_image_path = "../bin/textures/blocks.png";
 static const char* blocks_opacity_image_path = "../bin/textures/blocks-opacity.png";
 class Item;
-static const uint MAP_WIDTH = 100;	// ∏  ≥–¿Ã
-static const uint MAP_HEIGHT = 50;	// ∏  ≥Ù¿Ã
-int new_map[MAP_WIDTH][MAP_HEIGHT] = {
-		{1,1,1,1,1,1,1,1,1,1,1,1,1,},
-		{1,1,1,},
-		{1,1,1,}, //0
-		{1,1,1,},
-		{1,1,1,},
-		{1,1,1,},
-		{1,1,1,},
-		{1,1,1,},
-		{1,1,1,},
-		{1,1,1,0,0,12,},
-		{1,1,1,0,0,12,0,2},
-		{1,1,1,0,0,12,},
-		{1,1,1,},
-		{1,1,1,},
-		{1,1,1,},
-		{1,1,1,},
-		{0,0,0},//10
-		{0,0,0},
-		{0,0,0},
-		{0,0,0},
-		{1,1,1,2,2,2,},
-		{1,1,1,2,2,},
-		{1,1,1,2,},
-		{1,1,1,0,0,0,0,2},
-		{1,1,1,0,0,0,0,2,0,2},
-		{1,1,1,0,0,0,0,2},
-		{1,1,1,},
-		{1,1,1,2},//20
-		{1,1,1,2,2},
-		{1,1,1,2,2,2},
-		{1,1,5},
-		{1,1,5},
-		{1,1,5},
-		{1,1,1,2,2,2,},
-		{1,1,1,2,2,},
-		{1,1,1,2,},
-		{1,1,1,},
-		{1,1,1,},//30
-		{1,1,1,},
-		{0,0,0,0,0,2},
-		{0,0,0,0,0,2},
-		{0,0,0,0,0,2},
-		{0,0,0,0,0,2},
-		{1,1,1,},
-		{1,1,1,},
-		{0,0,0},
-		{0,0,0},
-		{1,1,1,},//40
-		{0,0,0},
-		{0,0,0},
-		{1,1,1,},
-		{1,1,1,1},
-		{1,1,1,1,1},
-		{1,1,1,1,1,1},
-		{1,1,1,1,1,1,1},
-		{1,1,1,1,1,1,1,1},
-		{1,1,1,1,1,1,1,1,1},
-		{1,1,1,},//50
-		{1,1,1,},
-		{1,1,1,},
-		{1,1,1,},
-		{1,1,1,},
-		{1,1,1,},
-};
-
 struct BlockProp {
 	int block_id = -1;
 	int texture_id = 0;
@@ -84,9 +17,9 @@ static const BlockProp	block_array[] = {
 	{	1,	1,	-1,	true	},		// stone
 	{	2,	2,	5,	true	},		// wood
 	{	3,	3,	-1,	false	},		// hole
-	{	4,	4,	1,	false	},		// glass
+	{	4,	4,	1,	true	},		// glass
 	{	5,	5,	8,	true,	1	},		// spike
-	{	6,	6,	2,	true	},		// item block
+	{	6,	6,	3,	true	},		// item block
 	{	7,	7,	-1,	true	},		// WIN block
 };
 class Block {
@@ -159,7 +92,11 @@ std::vector<vertex> create_block_vertices()
 class Map {
 public:
 	Block map[MAP_WIDTH][MAP_HEIGHT]; 
+	int map_width = MAP_WIDTH;
+	vec2 crt_start_pos;
 	float gravity = 30;
+	std::vector<vec2> enemy_pos_list;
+	std::vector<Item> items;
 	Block* block(vec2 pos)
 	{
 		if (pos.x < 0 || pos.y < 0 || pos.x >= MAP_WIDTH || pos.y >= MAP_HEIGHT) return 0;
@@ -173,7 +110,9 @@ public:
 	}
 	Map() {
 	}
-	Map(int (*input)[MAP_HEIGHT]) {
+	Map(int(*input)[MAP_HEIGHT], int m_w, vec2 start_pos, std::vector<vec2> enemies_pos, std::vector<Item> map_items = {}) {
+		map_width = m_w;
+		crt_start_pos = start_pos;
 		int temp;
 		for (int i = 0; i < MAP_WIDTH; i++) {
 			for (int j = 0; j < MAP_HEIGHT; j++) {
@@ -182,6 +121,9 @@ public:
 				if (temp / 10 > 0 ) map[i][j].item = temp/10;
 			}
 		}
+		enemy_pos_list = enemies_pos;
+		items = map_items;
+		
 	}
 	int shadow_pos(vec2 pos) {
 		int x = int(pos.x);
