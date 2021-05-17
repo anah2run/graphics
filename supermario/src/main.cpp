@@ -175,6 +175,8 @@ void update(float t)
 			score += 300;
 		}
 	}
+
+	// items
 	for (std::list<Item>::iterator it = item_list.begin(); it != item_list.end(); it++) {
 		it->theta += t * 2;
 		if (it->theta > PI/2) it->theta -= PI;
@@ -194,6 +196,7 @@ void update(float t)
 				gun.swap_gun(3);
 				break;
 			default:
+				score += 700;
 				break;
 			}
 			it = item_list.erase(it);
@@ -209,8 +212,11 @@ void update(float t)
 	// camera & skybox
 	float temp_x = crt.position.x;
 	temp_x = std::min(std::max(temp_x, 10.0f), map.map_width -5.0f);
-	cam.eye = vec3(temp_x, 7, 13);
-	cam.at = vec3(temp_x,7,0);
+	float temp_y = std::max(crt.position.y, 7.0f);
+	temp_y = cam.eye.y - (cam.eye.y - temp_y) * 0.1f;
+
+	cam.eye = vec3(temp_x, temp_y, 13);
+	cam.at = vec3(temp_x,temp_y,0);
 	cam.view_matrix = mat4::look_at(cam.eye, cam.at, cam.up);
 
 	// setup texture
@@ -294,7 +300,7 @@ void render()
 	glBindVertexArray(skybox_vertex_array);
 	uloc = glGetUniformLocation(program, "mode");
 	if (uloc > -1) glUniform1i(uloc, 9);
-	mat4 model_matrix_sky = mat4::translate(cam.eye.x, 5, 0) *
+	mat4 model_matrix_sky = mat4::translate(cam.eye.x, cam.eye.y - crt.position.y/8, 0) *
 		mat4::rotate(vec3(1, 0, 0), -PI / 2) *
 		mat4::rotate(vec3(0, 0, 1), cam.eye.x / 20) *
 		mat4::scale(vec3(20.0f));

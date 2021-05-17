@@ -44,7 +44,7 @@ void init_sound() {
 	mp3_src_gun->setDefaultVolume(0.5f);
 
 	mp3_src_jump = engine->addSoundSourceFromFile(mp3_path_jump);
-	mp3_src_jump->setDefaultVolume(0.5f);
+	mp3_src_jump->setDefaultVolume(0.7f);
 
 	mp3_src_step = engine->addSoundSourceFromFile(mp3_path_step);
 	mp3_src_step->setDefaultVolume(0.5f);
