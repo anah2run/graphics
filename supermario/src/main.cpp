@@ -1,4 +1,5 @@
 #define STB_IMAGE_IMPLEMENTATION
+#define BASE_CAM_Y 7.0f
 #include "cgmath.h"		// slee's simple math library
 #include "cgut.h"		// slee's OpenGL utility
 #include "item.h"
@@ -20,8 +21,8 @@ static const char*	frag_shader_path = "../bin/shaders/trackball.frag";
 // common structures
 struct camera
 {
-	vec3	eye = vec3( 5, 5, 20 );
-	vec3	at = vec3( 5, 5, 0 );
+	vec3	eye = vec3( 5, BASE_CAM_Y, 20 );
+	vec3	at = vec3( 5, BASE_CAM_Y, 0 );
 	vec3	up = vec3( 0, 1, 0 );
 	mat4	view_matrix = mat4::look_at( eye, at, up );
 
@@ -212,7 +213,7 @@ void update(float t)
 	// camera & skybox
 	float temp_x = crt.position.x;
 	temp_x = std::min(std::max(temp_x, 10.0f), map.map_width -5.0f);
-	float temp_y = std::max(crt.position.y, 7.0f);
+	float temp_y = std::max(crt.position.y, BASE_CAM_Y);
 	temp_y = cam.eye.y - (cam.eye.y - temp_y) * 0.1f;
 
 	cam.eye = vec3(temp_x, temp_y, 13);
@@ -300,7 +301,7 @@ void render()
 	glBindVertexArray(skybox_vertex_array);
 	uloc = glGetUniformLocation(program, "mode");
 	if (uloc > -1) glUniform1i(uloc, 9);
-	mat4 model_matrix_sky = mat4::translate(cam.eye.x, cam.eye.y - crt.position.y/8, 0) *
+	mat4 model_matrix_sky = mat4::translate(cam.eye.x, cam.eye.y - std::max(crt.position.y, BASE_CAM_Y)/10, 0) *
 		mat4::rotate(vec3(1, 0, 0), -PI / 2) *
 		mat4::rotate(vec3(0, 0, 1), cam.eye.x / 20) *
 		mat4::scale(vec3(20.0f));
@@ -570,6 +571,7 @@ void load_map(Map* m) {
 }
 void run_stage(Map* map) {
 	float tp, t, timer, finish_time, start_time;
+	cam.eye.y = 7;
 	while (game_status != 7 && !glfwWindowShouldClose(window)) {
 		load_map(map);
 		t = float(glfwGetTime());
