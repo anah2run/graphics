@@ -1,4 +1,5 @@
 #pragma once
+#include "sound.h"
 #include "particle.h"
 #include "map_pack.h"
 static const char* blocks_image_path = "../bin/textures/blocks.png";
@@ -23,7 +24,7 @@ static const BlockProp	block_array[] = {
 	{	7,	7,	-1,	true	},		// WIN block
 };
 class Block {
-public:
+public:				
 	void swap_block(int i) {
 		prop = &block_array[i];
 		hp = prop->max_hp;
@@ -45,6 +46,14 @@ public:
 		return  hp <= 0;
 	}	
 	void destroy() {
+		switch (prop->block_id) {
+		case 4://glass
+			engine->play2D(mp3_src_glass); //sfx
+			break;
+		default:
+			engine->play2D(mp3_src_blockhit); //sfx
+			break;
+		}
 		swap_block(0);//change block to air
 		particles_list.push_back(Particle(3, vec2(float(x),float(y)) + .5f));
 		if (item > 0) {
@@ -54,7 +63,7 @@ public:
 
 	}
 	void hit(int damage) {
-		printf("hp: %d, damaged %d. now %d\n", hp, damage, hp - damage);
+		engine->play2D(mp3_src_blockhit); //sfx
 		hp -= damage;
 		if (checkDestroy()) {
 			destroy();

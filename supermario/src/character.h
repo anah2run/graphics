@@ -288,9 +288,6 @@ public:
 	float	action_timer = 0;	// 행동 대기 시간
 	int		damage = 1;
 	bool	active = false;
-	~Enemy() {
-		printf("Enemy died\n");
-	}
 	Enemy(Map* mp, Character* cp, vec2 pos) {
 		mass = 2;
 		invinc_time = 0.05f;	// 피격 시 무적 시간
@@ -331,7 +328,7 @@ inline void Enemy::move() {
 	else {
 		move_left();
 	}
-	if (action_timer <= 0 && crt->position.y > position.y) {
+	if (action_timer <= 0 && (random_range(0, 1)<= 0.01f || crt->position.y > position.y)) {
 		jump();
 		action_timer = random_range(0.2f,1);
 	}

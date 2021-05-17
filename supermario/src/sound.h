@@ -13,6 +13,7 @@ ISoundSource* mp3_src_blockhit;
 ISoundSource* mp3_src_scream;
 ISoundSource* mp3_src_heart;
 ISoundSource* mp3_src_burned;
+ISoundSource* mp3_src_glass;
 //
 static const char* mp3_path_bgm = "../bin/sounds/breakout.mp3";
 static const char* mp3_path_gun = "../bin/sounds/gun.mp3";
@@ -24,6 +25,7 @@ static const char* mp3_path_blockhit = "../bin/sounds/solid.wav";
 static const char* mp3_path_scream = "../bin/sounds/scream.wav";
 static const char* mp3_path_heart = "../bin/sounds/heart.wav";
 static const char* mp3_path_burned = "../bin/sounds/burned.wav";
+static const char* mp3_path_glass = "../bin/sounds/glass.mp3";
 //
 void init_sound() {
 	mp3_src_bgm = engine->addSoundSourceFromFile(mp3_path_bgm);
@@ -50,9 +52,12 @@ void init_sound() {
 	mp3_src_scream = engine->addSoundSourceFromFile(mp3_path_scream);
 	mp3_src_scream->setDefaultVolume(0.7f);
 
+	mp3_src_heart = engine->addSoundSourceFromFile(mp3_path_heart);
+	mp3_src_heart->setDefaultVolume(0.4f);
+
 	mp3_src_burned = engine->addSoundSourceFromFile(mp3_path_burned);
 	mp3_src_burned->setDefaultVolume(0.3f);
 
-	mp3_src_heart = engine->addSoundSourceFromFile(mp3_path_heart);
-	mp3_src_heart->setDefaultVolume(0.4f);
+	mp3_src_glass = engine->addSoundSourceFromFile(mp3_path_glass);
+	mp3_src_glass->setDefaultVolume(0.4f);
 }

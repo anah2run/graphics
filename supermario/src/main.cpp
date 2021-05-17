@@ -131,7 +131,6 @@ void update(float t)
 		{
 			destroy = bp->prop->destroy_bullet;
 			if (bp->prop->max_hp > 0) {
-				engine->play2D(mp3_src_blockhit); //sfx
 				bp->hit(it->prop->block_dmg);
 			}
 		}
@@ -342,7 +341,7 @@ void render()
 	// render enemies
 	int temp_z = 0;
 	for (std::list<Enemy>::iterator it = enemy_list.begin(); it != enemy_list.end(); it++) {
-		model_matrix = mat4::translate(it->position.x, it->position.y, ++temp_z*.01f) * mat4::scale(it->direction.x, 1, 1);
+		model_matrix = mat4::translate(it->position.x, it->position.y, ++temp_z*.001f) * mat4::scale(it->direction.x, 1, 1);
 		uloc = glGetUniformLocation(program, "model_matrix");	if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
 		uloc = glGetUniformLocation(program, "animation");		if (uloc > -1) glUniform4i(uloc, 1, it->status, max_frame[it->status], it->frame); // sprite_id, status, max_frame, frame;	
 		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
@@ -350,7 +349,7 @@ void render()
 
 	// build character model
 	if (crt.invinc_t <= 0 || int(crt.invinc_t * 10) % 2 == 0) {
-		model_matrix = mat4::translate(crt.position.x, crt.position.y, ++temp_z * .01f) * mat4::scale(crt.direction.x, 1, 1);
+		model_matrix = mat4::translate(crt.position.x, crt.position.y, ++temp_z * .001f) * mat4::scale(crt.direction.x, 1, 1);
 		uloc = glGetUniformLocation(program, "model_matrix");	if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
 		uloc = glGetUniformLocation(program, "animation");		if (uloc > -1) glUniform4i(uloc, 0, crt.status, max_frame[crt.status], crt.frame); // sprite_id, status, max_frame, frame;	
 		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
@@ -360,7 +359,7 @@ void render()
 	uloc = glGetUniformLocation(program, "mode");		if (uloc > -1) glUniform1i(uloc, 2);
 	std::list<Bullet>::iterator it;
 	for (it = bullet_instances.begin(); it != bullet_instances.end(); it++) {
-		model_matrix = mat4::translate(it->position.x, it->position.y, 0.1f) * mat4::scale(0.4f, 0.4f, 1);
+		model_matrix = mat4::translate(it->position.x, it->position.y, ++temp_z * .001f) * mat4::scale(0.4f, 0.4f, 1);
 		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
 		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
 	}
@@ -545,7 +544,7 @@ int main( int argc, char* argv[] )
 	glfwSetMouseButtonCallback( window, mouse );	// callback for mouse click inputs
 	glfwSetCursorPosCallback( window, motion );		// callback for mouse movement
 
-	//engine->play2D(mp3_src_bgm, true);
+	engine->play2D(mp3_src_bgm, true);
 
 	float tp, t = 0;
 	// enters rendering/event loop
