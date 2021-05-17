@@ -62,6 +62,8 @@ GLuint	TEX_BLOCKS_OP = 0;
 //*************************************
 // global variables
 int		frame = 0;				// index of rendering frames
+int		game_status = 0;
+int		difficulty = 3;
 // holder of vertices and indices of a unit circle
 Map map;
 std::list<Enemy> enemy_list;
@@ -70,6 +72,7 @@ Gun			gun(&crt, 0);
 bool	b_key_fire = false;
 bool	b_key_right = false;
 bool	b_key_left = false;
+bool	b_key_jump = false;
 //*************************************
 // scene objects
 camera		cam;
@@ -77,6 +80,7 @@ material_t	material;
 //*************************************
 void update(float t)
 {
+	if (game_status == 6) t = 0;
 	// update projection matrix
 	cam.aspect = window_size.x / float(window_size.y);
 	cam.projection_matrix = mat4::perspective(cam.fovy, cam.aspect, cam.dnear, cam.dfar);
@@ -112,14 +116,20 @@ void update(float t)
 	glUniform4fv(glGetUniformLocation(program, "Ks"), 1, material.specular);
 	glUniform1f(glGetUniformLocation(program, "shininess"), material.shininess);
 
-	if (b_key_right) {
-		crt.move_right();
+	// player move
+	if (game_status == 0) {
+		if (b_key_jump) {
+			if (crt.jump()) 	engine->play2D(mp3_src_jump);
+			b_key_jump = false;
+		}
+		if (b_key_right) {
+			crt.move_right();
+		}
+		else if (b_key_left) {
+			crt.move_left();
+		}
 	}
-	else if (b_key_left) {
-		crt.move_left();
-	}
-	
-	crt.update(float(t), b_key_left || b_key_right);
+	crt.update(float(t), game_status == 0 && (b_key_left || b_key_right));
 	gun.trigger(&b_key_fire, t);
 
 	// build bullets
@@ -250,6 +260,16 @@ void update(float t)
 	uloc = glGetUniformLocation(program, "aspect_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, aspect_matrix);
 	uloc = glGetUniformLocation( program, "view_matrix" );			if(uloc>-1) glUniformMatrix4fv( uloc, 1, GL_TRUE, cam.view_matrix );
 	uloc = glGetUniformLocation( program, "projection_matrix" );	if(uloc>-1) glUniformMatrix4fv( uloc, 1, GL_TRUE, cam.projection_matrix );
+
+	if (game_status < 3)
+	{
+		if (crt.stand_blockp != 0 && crt.stand_blockp->prop->block_id == 7) {
+			game_status = 3;
+		}
+		else if (!crt.alive) {
+			game_status = 4;
+		}
+	}
 }
 void render()
 {
@@ -313,7 +333,7 @@ void render()
 	if (uloc > -1) glUniform1i(uloc, -1);
 
 	int temp_y = map.shadow_pos(crt.position);
-	if (temp_y >= 0) {
+	if (crt.alive && temp_y >= 0) {
 		model_matrix = mat4::translate(crt.position.x, temp_y + 0.01f, 0) * mat4::scale(crt.hitbox.width() / 2, 1, crt.hitbox.width() / 2);
 		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
 		glDrawElements(GL_TRIANGLES, 3 * 32, GL_UNSIGNED_INT, nullptr);
@@ -349,7 +369,7 @@ void render()
 	}
 
 	// build character model
-	if (crt.invinc_t <= 0 || int(crt.invinc_t * 10) % 2 == 0) {
+	if (crt.alive && (crt.invinc_t <= 0 || int(crt.invinc_t * 10) % 2 == 0)) {
 		model_matrix = mat4::translate(crt.position.x, crt.position.y, ++temp_z * .001f) * mat4::scale(crt.direction.x, 1, 1);
 		uloc = glGetUniformLocation(program, "model_matrix");	if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
 		uloc = glGetUniformLocation(program, "animation");		if (uloc > -1) glUniform4i(uloc, 0, crt.status, max_frame[crt.status], crt.frame); // sprite_id, status, max_frame, frame;	
@@ -406,8 +426,6 @@ void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 	{
 		if (key == GLFW_KEY_ESCAPE || key == GLFW_KEY_Q)	glfwSetWindowShouldClose(window, GL_TRUE);
 		else if (key == GLFW_KEY_H || key == GLFW_KEY_F1)	print_help();
-		else if (key == GLFW_KEY_HOME)		cam = camera();
-		else if (key == GLFW_KEY_K)		crt.hit(1,vec2(5,5));
 		else if (key == GLFW_KEY_A)
 		{
 			b_key_left = true;
@@ -418,9 +436,9 @@ void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 		}
 		else if (key == GLFW_KEY_W || key == GLFW_KEY_SPACE) 
 		{
-			if(crt.jump()) 	engine->play2D(mp3_src_jump);
+			b_key_jump = true;
 		}
-		else if (key == GLFW_KEY_J)							b_key_fire = true;
+		else if (key == GLFW_KEY_J)	b_key_fire = true;
 		else if (key == GLFW_KEY_1)	gun.swap_gun(0);
 		else if (key == GLFW_KEY_2)	gun.swap_gun(1);
 		else if (key == GLFW_KEY_3)	gun.swap_gun(2);
@@ -496,18 +514,6 @@ bool user_init()
 	// sound
 	init_sound();
 
-	// load map
-	map = Map(new_map1, 100, vec2(4, 3), new_map1_enemies, new_map1_items);
-	crt = Character(&map, map.crt_start_pos);
-	enemy_list = {};
-	for (auto pos : new_map1_enemies) {
-		enemy_list.push_back(Enemy(&map, &crt, pos));
-	}
-	item_list = {};
-	for (auto item : new_map1_items) {
-		item_list.push_back(item);
-	}
-
 	// texture
 	TEX_SKYBOX = cg_create_texture(skybox_image_path, true);  if (!TEX_SKYBOX) return false;
 	TEX_BLOCKS = cg_create_texture(blocks_image_path, true, GL_REPEAT, GL_NEAREST);
@@ -529,6 +535,64 @@ void user_finalize()
 {
 }
 
+void load_map(Map* m) {
+	game_status = 0;
+	map = *m;
+	crt = Character(&map, map.crt_start_pos, difficulty);
+	particles_list.clear();
+	bullet_instances.clear();
+	enemy_list.clear();
+	for (auto pos : map.enemy_pos_list) {
+		enemy_list.push_back(Enemy(&map, &crt, pos));
+	}
+	item_list.clear();
+	for (auto item : map.items){
+		item_list.push_back(item);
+	}
+}
+void run_stage(Map* map) {
+	float tp, t = 0, timer;
+	while (game_status != 7 && !glfwWindowShouldClose(window)) {
+		engine->stopAllSounds();
+		engine->play2D(mp3_src_bgm1, true);
+		load_map(map);
+		// enters rendering/event loop
+		for (frame = 0; !glfwWindowShouldClose(window); frame++)
+		{
+			tp = t;
+			t = float(glfwGetTime());
+			glfwPollEvents();	// polling and processing of events
+			update(t - tp);		// per-frame update
+			render();			// per-frame render
+			if (game_status == 3) {//win
+				timer = t;
+				engine->stopAllSounds();
+				engine->play2D(mp3_src_win);
+				game_status = 5;
+			}
+			else if (game_status == 4) {//fail
+				timer = t;
+				engine->stopAllSounds();
+				engine->play2D(mp3_src_fail);
+				particles_list.push_back(Particle(4, crt.position));
+				game_status = 6;
+			}
+			else if (game_status == 5) {//win_wait
+				if (t - timer > 4) {
+					game_status = 7;//move_next_stage
+					break;
+				}
+			}
+			else if (game_status == 6) {//fail_wait
+				if (t - timer > 3) {
+					game_status = 0;
+					break;
+				}
+			}
+		}
+	}
+	game_status = 0;
+}
 int main( int argc, char* argv[] )
 {
 	// create window and initialize OpenGL extensions
@@ -545,19 +609,8 @@ int main( int argc, char* argv[] )
 	glfwSetMouseButtonCallback( window, mouse );	// callback for mouse click inputs
 	glfwSetCursorPosCallback( window, motion );		// callback for mouse movement
 
-	engine->play2D(mp3_src_bgm, true);
-
-	float tp, t = 0;
-	// enters rendering/event loop
-	for( frame=0; !glfwWindowShouldClose(window); frame++ )
-	{
-		tp = t;
-		t = float(glfwGetTime());
-		glfwPollEvents();	// polling and processing of events
-		update(t-tp);			// per-frame update
-		render();			// per-frame render
-	}
-
+	run_stage(&Map(new_map1, 100, vec2(4, 3), new_map1_enemies, new_map1_items));
+	run_stage(&Map(new_map2, 60, vec2(4, 3), new_map2_enemies, new_map2_items));
 	// normal termination
 	user_finalize();
 	cg_destroy_window(window);

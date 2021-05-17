@@ -117,6 +117,9 @@ public:
 		if (bp == 0) return 0;
 		return bp->prop->block_id;
 	}
+	~Map() {
+		printf("map loaded\n");
+	}
 	Map() {
 	}
 	Map(int(*input)[MAP_HEIGHT], int m_w, vec2 start_pos, std::vector<vec2> enemies_pos, std::vector<Item> map_items = {}) {

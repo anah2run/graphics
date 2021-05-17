@@ -25,6 +25,7 @@ struct particle_t
 	void blood(vec2 pos);
 	void bomb(vec2 pos);
 	void box(vec2 pos);
+	void fail(vec2 pos);
 	void update(float t);
 };
 
@@ -70,6 +71,18 @@ inline void particle_t::box(vec2 pos)
 	scale = random_range(0.05f, 0.2f);
 	life = random_range(0.01f, 1.0f);
 	velocity = vec2(random_range(-10.0f, 10.0f), random_range(-10.0f, 10.0f)) * 0.003f;
+	elapsed_time = 0.0f;
+	time_interval = random_range(200.0f, 600.0f);
+	alive = true;
+}
+
+inline void particle_t::fail(vec2 pos)
+{
+	position = pos;
+	color = vec4(1.0f, 0.7f, 0.0f, 1);
+	scale = random_range(0.1f, 0.5f);
+	life = random_range(2, 3);
+	velocity = vec2(random_range(-15.0f, 10.0f), random_range(-15.0f, 10.0f)) * 0.003f;
 	elapsed_time = 0.0f;
 	time_interval = random_range(200.0f, 600.0f);
 	alive = true;
@@ -121,6 +134,9 @@ public:
 	
 		for (int i = 0; i < num; i++) {
 			switch (particle_mode) {
+			case 4: // fail
+				temp_particle.fail(pos);
+				break;
 			case 3: // break box
 				temp_particle.box(pos);
 				break;

@@ -30,9 +30,10 @@ class Character {
 public:
 	Character() {
 	}
-	Character(Map* p, vec2 pos) {
+	Character(Map* p, vec2 pos, int m_hp = 3) {
 		mapp = p;
 		position = pos;
+		max_hp = m_hp;
 	}
 	// 애니메이션 관련
 	int		sprite_index = 0;
@@ -48,7 +49,7 @@ public:
 	float	speed = 1.0f;		// 이동 가속도
 	float	max_jump = 3.5f;	// 최대 점프
 	float	mass = 1; 			// 반동 감소
-	int	max_hp = 30;			// 최대 체력
+	int	max_hp = 3;			// 최대 체력
 	Map* mapp;					// 맵 포인터
 
 	vec2	direction = vec2(1,0);	// 가고자 하는 방향

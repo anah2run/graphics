@@ -34,7 +34,7 @@ int new_map1[MAP_WIDTH][MAP_HEIGHT] = {
 		{1,1,1,0,0,2},
 		{1,1,1,0,0,16,0,0,12},
 		{1,1,1,0,0,2},
-		{1,1,1,0,0,2},//10
+		{1,1,7,0,0,2},//10
 		{1,1,1},
 		{3,3,3,3,0,0,0,0,3},
 		{3,3,3,3,0,0,0,0,3},
@@ -126,11 +126,16 @@ int new_map1[MAP_WIDTH][MAP_HEIGHT] = {
 		{3,3,3,3,3,3,3,3,3,3,3,3,3},
 };
 
-std::list<vec2> new_map2_enemies = {
+std::vector<vec2> new_map2_enemies = {
 	{22, 3},
 	{38, 6},
 	{33, 6},
 	{12, 3}
+};
+std::vector<Item> new_map2_items = {
+	Item(1,vec2(4,8)),
+	Item(1,vec2(5,8)),
+	Item(1,vec2(6,8)),
 };
 int new_map2[MAP_WIDTH][MAP_HEIGHT] = {
 		{1,1,1,1,1,1,1,1,1,1,1,1,1,},
