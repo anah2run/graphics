@@ -64,6 +64,10 @@ GLuint	TEX_BLOCKS_OP = 0;
 int		frame = 0;				// index of rendering frames
 int		game_status = 0;
 int		difficulty = 3;
+int		score = 0;
+int		total_score = 0;
+float	playtime = 0;
+float	total_playtime = 0;
 // holder of vertices and indices of a unit circle
 Map map;
 std::list<Enemy> enemy_list;
@@ -148,6 +152,7 @@ void update(float t)
 			if (eit->hitbox.collid(it->position - eit->position)) {
 				if (eit->hit(it->prop->dmg, it->direction))
 				{
+					score += 100;
 					destroy = true; //적들이 총알에 맞았을 때
 					engine->play2D(mp3_src_enmhit); //sfx
 					break;
@@ -162,17 +167,19 @@ void update(float t)
 		if (it->hitbox.collid(it->position - crt.position)) {
 			if(crt.hit(it->damage, it->position - crt.position)) engine->play2D(mp3_src_scream); // 플레이어 비명
 		}
-		it->update(t, true);
+		it->update(t, game_status == 0);
 		if (!(it->alive)) {
 			engine->play2D(mp3_src_enmboom); //sfx
 			particles_list.push_back(Particle(1, it->position));
 			it=enemy_list.erase(it);
+			score += 300;
 		}
 	}
 	for (std::list<Item>::iterator it = item_list.begin(); it != item_list.end(); it++) {
 		it->theta += t * 2;
 		if (it->theta > PI/2) it->theta -= PI;
 		if (crt.hitbox.collid(it->position - crt.position)) {
+			score += 300;
 			switch (it->item_code) {
 			case 1:
 				crt.heal(2);
@@ -425,7 +432,12 @@ void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 	if(action==GLFW_PRESS)
 	{
 		if (key == GLFW_KEY_ESCAPE || key == GLFW_KEY_Q)	glfwSetWindowShouldClose(window, GL_TRUE);
-		else if (key == GLFW_KEY_H || key == GLFW_KEY_F1)	print_help();
+		else if (key == GLFW_KEY_H || key == GLFW_KEY_F1) {
+			print_help();
+			printf("score:%d, total:%d\n", score,total_score);
+			printf("play_time:%f, total:%f\n", playtime, total_playtime);
+		}
+		else if (key == GLFW_KEY_R)	game_status = 8;
 		else if (key == GLFW_KEY_A)
 		{
 			b_key_left = true;
@@ -551,11 +563,14 @@ void load_map(Map* m) {
 	}
 }
 void run_stage(Map* map) {
-	float tp, t = 0, timer;
+	float tp, t, timer, finish_time, start_time;
 	while (game_status != 7 && !glfwWindowShouldClose(window)) {
+		load_map(map);
+		t = float(glfwGetTime());
+		start_time = t;
+		score = 0;
 		engine->stopAllSounds();
 		engine->play2D(mp3_src_bgm1, true);
-		load_map(map);
 		// enters rendering/event loop
 		for (frame = 0; !glfwWindowShouldClose(window); frame++)
 		{
@@ -565,6 +580,8 @@ void run_stage(Map* map) {
 			update(t - tp);		// per-frame update
 			render();			// per-frame render
 			if (game_status == 3) {//win
+				finish_time = t;
+				score += 1000;
 				timer = t;
 				engine->stopAllSounds();
 				engine->play2D(mp3_src_win);
@@ -589,8 +606,17 @@ void run_stage(Map* map) {
 					break;
 				}
 			}
+			else if (game_status == 8) { //restart
+				break;
+			}
+			else {
+				playtime = t - start_time;
+			}
 		}
 	}
+	playtime = finish_time - start_time;
+	total_playtime += playtime;
+	total_score += score;
 	game_status = 0;
 }
 int main( int argc, char* argv[] )
@@ -609,6 +635,7 @@ int main( int argc, char* argv[] )
 	glfwSetMouseButtonCallback( window, mouse );	// callback for mouse click inputs
 	glfwSetCursorPosCallback( window, motion );		// callback for mouse movement
 
+	total_score = 0;
 	run_stage(&Map(new_map1, 100, vec2(4, 3), new_map1_enemies, new_map1_items));
 	run_stage(&Map(new_map2, 60, vec2(4, 3), new_map2_enemies, new_map2_items));
 	// normal termination

@@ -315,7 +315,7 @@ inline void Enemy::update(float t, bool moving) {
 	physics(t, active);
 
 	update_status(t, active);
-	if (active) {
+	if (active && moving) {
 		move();
 	}
 	else {
