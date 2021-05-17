@@ -46,7 +46,16 @@ GLuint	cube_vertex_array = 0;
 GLuint	circle_vertex_array = 0;
 GLuint	skybox_vertex_array = 0;
 // Texture & sprite
-GLuint	SPRITE_CRT = 0;
+GLuint	SPRITE_CRT_RUN = 0;
+GLuint	SPRITE_CRT_IDLE = 0;
+GLuint	SPRITE_CRT_JUMP = 0;
+
+GLuint	SPRITE_ENEMY_RUN = 0;
+GLuint	SPRITE_ENEMY_IDLE = 0;
+GLuint	SPRITE_ENEMY_JUMP = 0;
+
+GLuint	SPRITE_HEART = 0;
+
 GLuint	TEX_SKYBOX = 0;
 GLuint	TEX_BLOCKS = 0;
 GLuint	TEX_BLOCKS_OP = 0;
@@ -154,6 +163,7 @@ void update(float t)
 	}
 	for (std::list<Item>::iterator it = item_list.begin(); it != item_list.end(); it++) {
 		it->theta += t * 2;
+		if (it->theta > PI/2) it->theta -= PI;
 		if (crt.hitbox.collid(it->position - crt.position)) {
 			switch (it->item_code) {
 			case 1:
@@ -202,11 +212,44 @@ void update(float t)
 	glUniform1i(glGetUniformLocation(program, "TEX_BLOCKS_OP"), 1);
 
 	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, SPRITE_CRT);
-	glUniform1i(glGetUniformLocation(program, "SPRITE_CRT"), 2);
+	glBindTexture(GL_TEXTURE_2D, SPRITE_CRT_IDLE);
+	glUniform1i(glGetUniformLocation(program, "SPRITE_CRT_IDLE"), 2);
+
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, SPRITE_CRT_RUN);
+	glUniform1i(glGetUniformLocation(program, "SPRITE_CRT_RUN"), 3);
+
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, SPRITE_CRT_JUMP);
+	glUniform1i(glGetUniformLocation(program, "SPRITE_CRT_JUMP"), 4);
+
+	glActiveTexture(GL_TEXTURE5);
+	glBindTexture(GL_TEXTURE_2D, SPRITE_ENEMY_IDLE);
+	glUniform1i(glGetUniformLocation(program, "SPRITE_ENEMY_IDLE"), 5);
+
+	glActiveTexture(GL_TEXTURE6);
+	glBindTexture(GL_TEXTURE_2D, SPRITE_ENEMY_RUN);
+	glUniform1i(glGetUniformLocation(program, "SPRITE_ENEMY_RUN"), 6);
+
+	glActiveTexture(GL_TEXTURE7);
+	glBindTexture(GL_TEXTURE_2D, SPRITE_ENEMY_JUMP);
+	glUniform1i(glGetUniformLocation(program, "SPRITE_ENEMY_JUMP"), 7);
+
+
+	glActiveTexture(GL_TEXTURE10);
+	glBindTexture(GL_TEXTURE_2D, SPRITE_HEART);
+	glUniform1i(glGetUniformLocation(program, "SPRITE_HEART"), 10);
 
 	// update uniform variables in vertex/fragment shaders
 	GLint uloc;
+	mat4 aspect_matrix =
+	{
+	   std::min(cam.aspect,1.0f), 0, 0, 0,
+	   0, std::min(cam.aspect,1.0f), 0, 0,
+	   0, 0, 1, 0,
+	   0, 0, 0, 1
+	};
+	uloc = glGetUniformLocation(program, "aspect_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, aspect_matrix);
 	uloc = glGetUniformLocation( program, "view_matrix" );			if(uloc>-1) glUniformMatrix4fv( uloc, 1, GL_TRUE, cam.view_matrix );
 	uloc = glGetUniformLocation( program, "projection_matrix" );	if(uloc>-1) glUniformMatrix4fv( uloc, 1, GL_TRUE, cam.projection_matrix );
 }
@@ -255,7 +298,7 @@ void render()
 					break;
 				}
 				model_matrix = translate_matrix * scale_matrix;
-				uloc = glGetUniformLocation(program, "block_id");
+				uloc = glGetUniformLocation(program, "index");
 				if (uloc > -1) glUniform1i(uloc, block_id);
 				uloc = glGetUniformLocation(program, "model_matrix");
 				if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
@@ -288,36 +331,36 @@ void render()
 	glBindVertexArray(sprite_vertex_array);
 
 	// render items
-	uloc = glGetUniformLocation(program, "mode");		if (uloc > -1) glUniform1i(uloc, 0);
+	uloc = glGetUniformLocation(program, "mode");		if (uloc > -1) glUniform1i(uloc, 2);
 	for (std::list<Item>::iterator it = item_list.begin(); it != item_list.end(); it++) {
 		model_matrix = mat4::translate(it->position.x, it->position.y, 0) * mat4::scale(0.9f, 0.9f, 1) * mat4::rotate(vec3(0, 1, 0),it->theta);
 		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
 		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
 	}
+
+	// sprite animation part
+	uloc = glGetUniformLocation(program, "mode");		if (uloc > -1) glUniform1i(uloc, 3);
 	// render enemies
-	uloc = glGetUniformLocation(program, "mode");		if (uloc > -1) glUniform1i(uloc, 0);
 	for (std::list<Enemy>::iterator it = enemy_list.begin(); it != enemy_list.end(); it++) {
-		model_matrix = mat4::translate(it->position.x, it->position.y, -.01f) * mat4::scale(1, 1, 1);
-		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
+		model_matrix = mat4::translate(it->position.x, it->position.y, -.05f) * mat4::scale(it->direction.x, 1, 1);
+		uloc = glGetUniformLocation(program, "model_matrix");	if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
+		uloc = glGetUniformLocation(program, "animation");		if (uloc > -1) glUniform4i(uloc, 1, it->status, max_frame[it->status], it->frame); // sprite_id, status, max_frame, frame;	
 		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
 	}
 
 	// build character model
-	uloc = glGetUniformLocation(program, "mode");		if (uloc > -1) glUniform1i(uloc, 2);
-	uloc = glGetUniformLocation(program, "animation");		if (uloc > -1) glUniform4i(uloc, 0, 0, crt.max_frame, crt.frame); // sprite_id, status, max_frame, frame;	
-	
 	if (crt.invinc_t <= 0 || int(crt.invinc_t * 10) % 2 == 0) {
 		model_matrix = mat4::translate(crt.position.x, crt.position.y, 0) * mat4::scale(crt.direction.x, 1, 1);
-		uloc = glGetUniformLocation(program, "direction");		if (uloc > -1) glUniform2i(uloc, int(crt.direction.x), int(crt.direction.y));
-		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
+		uloc = glGetUniformLocation(program, "model_matrix");	if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
+		uloc = glGetUniformLocation(program, "animation");		if (uloc > -1) glUniform4i(uloc, 0, crt.status, max_frame[crt.status], crt.frame); // sprite_id, status, max_frame, frame;	
 		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
 	}
 
 	// build bullets
-	uloc = glGetUniformLocation(program, "mode");		if (uloc > -1) glUniform1i(uloc, 0);
+	uloc = glGetUniformLocation(program, "mode");		if (uloc > -1) glUniform1i(uloc, 2);
 	std::list<Bullet>::iterator it;
 	for (it = bullet_instances.begin(); it != bullet_instances.end(); it++) {
-		model_matrix = mat4::translate(it->position.x, it->position.y, 0) * mat4::scale(0.2f, 0.2f, 1);
+		model_matrix = mat4::translate(it->position.x, it->position.y, 0.1f) * mat4::scale(0.4f, 0.4f, 1);
 		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
 		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
 	}
@@ -327,7 +370,7 @@ void render()
 	uloc = glGetUniformLocation(program, "mode");		if (uloc > -1) glUniform1i(uloc, 4);
 	for (std::list<Particle>::iterator it = particles_list.begin(); it != particles_list.end(); it++) {
 		for (std::list<particle_t>::iterator pit = it->particles.begin(); pit != it->particles.end(); pit++) {
-			mat4 translate_matrix = mat4::translate(vec3(pit->position.x, pit->position.y, -1));
+			mat4 translate_matrix = mat4::translate(vec3(pit->position.x, pit->position.y, 0));
 			mat4 scale_matrix = mat4::scale(pit->scale);
 			model_matrix = translate_matrix * scale_matrix;
 
@@ -463,9 +506,18 @@ bool user_init()
 
 	// texture
 	TEX_SKYBOX = cg_create_texture(skybox_image_path, true);  if (!TEX_SKYBOX) return false;
-	SPRITE_CRT = cg_create_texture(sprite_crt_run_image_path, true); if (!SPRITE_CRT) return false;
 	TEX_BLOCKS = cg_create_texture(blocks_image_path, true, GL_REPEAT, GL_NEAREST);
 	TEX_BLOCKS_OP = cg_create_texture(blocks_opacity_image_path, true);
+
+	// sprite
+	SPRITE_CRT_RUN = cg_create_texture(sprite_crt_run_image_path, true); if (!SPRITE_CRT_RUN) return false;
+	SPRITE_CRT_IDLE = cg_create_texture(sprite_crt_idle_image_path, true); if (!SPRITE_CRT_IDLE) return false;
+	SPRITE_CRT_JUMP = cg_create_texture(sprite_crt_jump_image_path, true); if (!SPRITE_CRT_JUMP) return false;
+	SPRITE_ENEMY_RUN = cg_create_texture(sprite_enemy_run_image_path, true); if (!SPRITE_ENEMY_RUN) return false;
+	SPRITE_ENEMY_IDLE = cg_create_texture(sprite_enemy_idle_image_path, true); if (!SPRITE_ENEMY_IDLE) return false;
+	SPRITE_ENEMY_JUMP = cg_create_texture(sprite_enemy_jump_image_path, true); if (!SPRITE_ENEMY_JUMP) return false;
+
+	SPRITE_HEART = cg_create_texture(sprite_heart_image_path, true); if (!SPRITE_HEART) return false;
 	return true;
 }
 

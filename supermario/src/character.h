@@ -3,6 +3,7 @@
 #include "particle.h"
 #include <cmath>
 static const int ENEMY_MAX_HP = 5;
+static const std::vector<uint> max_frame = { 4,6,4 }; // 0:idle, 1:run ,2:jump
 
 class Map;
 class Hitbox {
@@ -37,7 +38,6 @@ public:
 	int		sprite_index = 0;
 	int		status = 0;
 	int		frame = 0;
-	int		max_frame = 6;
 	float	frame_interval = 0.1f;
 	float	frame_t = 0;
 	//
@@ -71,7 +71,7 @@ public:
 	bool	checkDeath();
 	void	physics(float t, bool moving);
 	void	update(float t, bool moving);
-
+	void	update_status(float t, bool moving);
 };
 
 inline bool Character::hit(int damage, vec2 hit_pos) {
@@ -95,6 +95,7 @@ inline bool Character::hit(int damage, vec2 hit_pos) {
 inline bool Character::heal(int amount) {
 	bool flag = hp <= max_hp;
 	hp = std::min(hp + amount, max_hp);
+	engine->play2D(mp3_src_heart); //sfx
 	return flag;
 }
 inline bool Character::checkDeath() {
@@ -201,15 +202,11 @@ inline void Character::physics(float t, bool moving)
 		}
 	}
 }
-
-inline void Character::update(float t, bool moving)
-{
-	invinc_t = std::max(invinc_t - t, 0.0f);
-	physics(t, moving);
+inline void Character::update_status(float t, bool moving) {
 	int temp_status = 0;
 	if (is_jump) temp_status = 2;
 	else if (moving) temp_status = 1;
-	
+
 	if (temp_status != status) {
 		frame = 0;
 		frame_t = 0;
@@ -220,8 +217,20 @@ inline void Character::update(float t, bool moving)
 		frame_t += t;
 		int temp_frame = int(frame_t / frame_interval);
 		frame_t -= frame_interval * temp_frame;
-		frame = (frame + temp_frame) % max_frame;
+		if (temp_status == 2) {
+			frame += temp_frame;
+			frame = uint(frame) >= max_frame[status] ? max_frame[status] - 1 : frame;
+		}
+		else {
+			frame = (frame + temp_frame) % max_frame[status];
+		}
 	}
+}
+inline void Character::update(float t, bool moving)
+{
+	invinc_t = std::max(invinc_t - t, 0.0f);
+	physics(t, moving);
+	update_status(t, moving);
 }
 
 
@@ -297,7 +306,8 @@ inline bool Enemy::check_active() {
 	return active || hp < max_hp || length(crt->position - position) < active_range;
 }
 inline void Enemy::update(float t, bool moving) {
-	physics(t, moving);
+	physics(t, active);
+	update_status(t, active);
 	if (active) {
 		move();
 	}

@@ -6,14 +6,21 @@
 #endif
 
 //texture
-uniform sampler2D	SPRITE_CRT;
+uniform sampler2D	SPRITE_CRT_IDLE;
+uniform sampler2D	SPRITE_CRT_RUN;
+uniform sampler2D	SPRITE_CRT_JUMP;
+uniform sampler2D	SPRITE_ENEMY_IDLE;
+uniform sampler2D	SPRITE_ENEMY_RUN;
+uniform sampler2D	SPRITE_ENEMY_JUMP;
+
+uniform sampler2D	SPRITE_HEART;
+
 uniform sampler2D	TEX_SKYBOX;
 uniform sampler2D	TEX_BLOCKS;
 uniform sampler2D	TEX_BLOCKS_OP;
 //
 uniform int			mode;
-uniform int			block_id;
-uniform vec2		direction;
+uniform int			index;
 uniform ivec4		animation; // sprite_id, status, max_frame, frame;
 uniform vec4		particle_color;
 
@@ -37,7 +44,7 @@ vec4 phong(vec3 l, vec3 n, vec3 h, vec4 Kd, vec4 ila, vec4 ild, vec4 ils)
 {
 	
 	vec4 Ira,Ird,Irs;
-	if (block_id == 4) {
+	if (index == 4) {
 		Ira = 0.5f*Ka * ila;											// ambient reflection
 		Ird = 0.7f*max(Kd * dot(l, n) * ild, 0.0);					// diffuse reflection
 		Irs = max(Ks * pow(dot(h, n), shininess*5.f) * ils, 0.0);	// specular reflection
@@ -73,20 +80,48 @@ void main()
 		h = normalize(l + v);
 		fragColor = min(fragColor + phong(l, n, h, Kd, Ia2[i], Id2[i], Is2[i]) / (len *len),1.5f);
 	}
+	vec4 sprite;
 	switch (mode) {
 	case 9: // skybox
 		fragColor = texture( TEX_SKYBOX, tc);
 		break;
 	case 1: // block texture
-		fragColor *= texture(TEX_BLOCKS, tc+vec2(0,0.1f* (block_id-1)));
-		//if(block_id==4)	fragColor.a *= 0.15f;
-		fragColor.a = texture(TEX_BLOCKS_OP, tc + vec2(0, 0.1f * (block_id - 1))).x;
+		fragColor *= texture(TEX_BLOCKS, tc+vec2(0,0.1f* (index-1)));
+		fragColor.a = texture(TEX_BLOCKS_OP, tc + vec2(0, 0.1f * (index - 1))).x;
 		break;
-	case 2: // sprite animation
-		fragColor *= texture( SPRITE_CRT, vec2((animation.a + (tc.x*0.8f))/ animation.z ,tc.y * 0.8f));
+	case 2: // sprite
+		if(index == 0){ //heart
+			sprite = texture( SPRITE_HEART, tc);
+		}
+		else{
+			sprite = texture( SPRITE_HEART, tc);
+		}
+		fragColor *= sprite;
 		break;
-	case 3: // sprite
-		fragColor *= texture( SPRITE_CRT, tc);
+	case 3: // sprite animation
+		if(animation.x == 0){ //crt
+			if(animation.y == 0){
+				sprite = texture( SPRITE_CRT_IDLE, vec2((animation.a + (tc.x*0.8f) - 0.1f)/ animation.z ,tc.y * 0.8f));
+			}
+			else if(animation.y == 1){
+				sprite = texture( SPRITE_CRT_RUN, vec2((animation.a + (tc.x*0.8f) - 0.1f)/ animation.z ,tc.y * 0.8f));
+			}
+			else{
+				sprite = texture( SPRITE_CRT_JUMP, vec2((animation.a + (tc.x*0.8f) - 0.1f)/ animation.z ,tc.y * 0.8f));
+			}	
+		}
+		else{//enemy
+			if(animation.y == 0){ 
+				sprite = texture( SPRITE_ENEMY_IDLE, vec2((animation.a + (tc.x*0.8f) - 0.1f)/ animation.z ,tc.y * 0.8f));
+			}
+			else if(animation.y == 1){
+				sprite = texture( SPRITE_ENEMY_RUN, vec2((animation.a + (tc.x*0.8f) - 0.1f)/ animation.z ,tc.y * 0.8f));
+			}
+			else{
+				sprite = texture( SPRITE_ENEMY_JUMP, vec2((animation.a + (tc.x*0.8f) - 0.1f)/ animation.z ,tc.y * 0.8f));
+			}	
+		}
+		fragColor *= sprite;
 		break;
 	case 4: // particle
 		fragColor *= particle_color;
