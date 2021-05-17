@@ -149,7 +149,7 @@ void update(float t)
 
 	// camera & skybox
 	float temp_x = crt.position.x;
-	temp_x = std::min(std::max(temp_x, 10.0f), 40.0f);
+	temp_x = std::min(std::max(temp_x, 10.0f), 60.0f);
 	cam.eye = vec3(temp_x, 7, 13);
 	cam.at = vec3(temp_x,7,0);
 	cam.view_matrix = mat4::look_at(cam.eye, cam.at, cam.up);
@@ -186,7 +186,7 @@ void render()
 	glUniform1i(glGetUniformLocation(program, "mode"), 9);
 	mat4 model_matrix_sky = mat4::translate(cam.eye.x, 5, 0) *
 		mat4::rotate(vec3(1, 0, 0), -PI / 2) *
-		mat4::rotate(vec3(0, 0, 1), cam.eye.x / 10) *
+		mat4::rotate(vec3(0, 0, 1), cam.eye.x / 20) *
 		mat4::scale(vec3(20.0f));
 	uloc = glGetUniformLocation(program, "model_matrix");			
 	if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix_sky);
@@ -412,10 +412,10 @@ bool user_init()
 
 	//
 	enemy_list = {
-		Enemy(&map, &crt, vec2(18, 3)),
-		Enemy(&map, &crt, vec2(34, 6)),
-		Enemy(&map, &crt, vec2(29, 6)),
-		Enemy(&map, &crt, vec2(8, 3))
+		Enemy(&map, &crt, vec2(22, 3)),
+		Enemy(&map, &crt, vec2(38, 6)),
+		Enemy(&map, &crt, vec2(33, 6)),
+		Enemy(&map, &crt, vec2(12, 3))
 	};
 
 	// texture
