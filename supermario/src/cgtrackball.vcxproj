@@ -60,6 +60,7 @@
     <ClInclude Include="character.h" />
     <ClInclude Include="gun.h" />
     <ClInclude Include="item.h" />
+    <ClInclude Include="light.h" />
     <ClInclude Include="map.h" />
     <ClInclude Include="cgmath.h" />
     <ClInclude Include="cgut.h" />

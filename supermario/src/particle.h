@@ -32,9 +32,9 @@ inline void particle_t::dust(vec2 pos)
 {
 	position = pos;
 	color = vec4(0.5f, 0.5f, 0.5f,1);
-	scale = random_range(0.005f, 0.08f);
+	scale = random_range(0.01f, 0.1f);
 	life = random_range(0.01f, 1.0f);
-	velocity = vec2(random_range(-2.0f, 2.0f), random_range(0.0f, 3.0f)) * 0.003f;
+	velocity = vec2(random_range(-3.0f, 3.0f), random_range(0.0f, 4.0f)) * 0.003f;
 	elapsed_time = 0.0f;
 	time_interval = random_range(200.0f, 600.0f);
 	alive = true;

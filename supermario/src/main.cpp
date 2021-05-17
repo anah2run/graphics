@@ -6,6 +6,7 @@
 #include "character.h"
 #include "gun.h"
 #include "sprite.h"
+#include "light.h"
 #include "skybox.h"
 #include "sound.h"
 #include "particle.h"
@@ -47,6 +48,8 @@ GLuint	skybox_vertex_array = 0;
 // Texture & sprite
 GLuint	SPRITE_CRT = 0;
 GLuint	TEX_SKYBOX = 0;
+GLuint	TEX_BLOCKS = 0;
+GLuint	TEX_BLOCKS_OP = 0;
 //*************************************
 // global variables
 int		frame = 0;				// index of rendering frames
@@ -62,13 +65,44 @@ bool	b_key_left = false;
 //*************************************
 // scene objects
 camera		cam;
-
+material_t	material;
 //*************************************
 void update(float t)
 {
 	// update projection matrix
 	cam.aspect = window_size.x / float(window_size.y);
 	cam.projection_matrix = mat4::perspective(cam.fovy, cam.aspect, cam.dnear, cam.dfar);
+
+	// setup sunlight properties
+	glUniform4fv(glGetUniformLocation(program, "light_position"), 1, sunlight.position);
+	glUniform4fv(glGetUniformLocation(program, "Ia"), 1, sunlight.ambient);
+	glUniform4fv(glGetUniformLocation(program, "Id"), 1, sunlight.diffuse);
+	glUniform4fv(glGetUniformLocation(program, "Is"), 1, sunlight.specular);
+
+	//light source effect
+	glUniform1i(glGetUniformLocation(program, "NUM_LIGHT"), NUM_LIGHT);
+	int index = 0;
+	char string[20] = "light_position2[0]";
+	char string2[20] = "Ia2[0]";
+	char string3[20] = "Id2[0]";
+	char string4[20] = "Is2[0]";
+	for (auto& l : lights) {
+
+		glUniform4fv(glGetUniformLocation(program, string), 1, l.position);
+		glUniform4fv(glGetUniformLocation(program, string2), 1, l.ambient);
+		glUniform4fv(glGetUniformLocation(program, string3), 1, l.diffuse);
+		glUniform4fv(glGetUniformLocation(program, string4), 1, l.specular);
+		string[16] ++;
+		string2[4]++;
+		string3[4]++;
+		string4[4]++;
+	}
+
+	// setup material properties
+	glUniform4fv(glGetUniformLocation(program, "Ka"), 1, material.ambient);
+	glUniform4fv(glGetUniformLocation(program, "Kd"), 1, material.diffuse);
+	glUniform4fv(glGetUniformLocation(program, "Ks"), 1, material.specular);
+	glUniform1f(glGetUniformLocation(program, "shininess"), material.shininess);
 
 	if (b_key_right) {
 		crt.move_right();
@@ -155,13 +189,21 @@ void update(float t)
 	cam.view_matrix = mat4::look_at(cam.eye, cam.at, cam.up);
 
 	// setup texture
-	glActiveTexture(GL_TEXTURE0);
+	glActiveTexture(GL_TEXTURE9);
 	glBindTexture(GL_TEXTURE_2D, TEX_SKYBOX);
-	glUniform1i(glGetUniformLocation(program, "TEX_SKYBOX"), 0);
+	glUniform1i(glGetUniformLocation(program, "TEX_SKYBOX"), 9);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, TEX_BLOCKS);
+	glUniform1i(glGetUniformLocation(program, "TEX_BLOCKS"), 0);
 
 	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, TEX_BLOCKS_OP);
+	glUniform1i(glGetUniformLocation(program, "TEX_BLOCKS_OP"), 1);
+
+	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, SPRITE_CRT);
-	glUniform1i(glGetUniformLocation(program, "SPRITE_CRT"), 1);
+	glUniform1i(glGetUniformLocation(program, "SPRITE_CRT"), 2);
 
 	// update uniform variables in vertex/fragment shaders
 	GLint uloc;
@@ -179,11 +221,11 @@ void render()
 
 	GLint uloc;
 	mat4 model_matrix;
-	
+
 	// SKYBOX
-	glActiveTexture(GL_TEXTURE0);
 	glBindVertexArray(skybox_vertex_array);
-	glUniform1i(glGetUniformLocation(program, "mode"), 9);
+	uloc = glGetUniformLocation(program, "mode");
+	if (uloc > -1) glUniform1i(uloc, 9);
 	mat4 model_matrix_sky = mat4::translate(cam.eye.x, 5, 0) *
 		mat4::rotate(vec3(1, 0, 0), -PI / 2) *
 		mat4::rotate(vec3(0, 0, 1), cam.eye.x / 20) *
@@ -213,6 +255,8 @@ void render()
 					break;
 				}
 				model_matrix = translate_matrix * scale_matrix;
+				uloc = glGetUniformLocation(program, "block_id");
+				if (uloc > -1) glUniform1i(uloc, block_id);
 				uloc = glGetUniformLocation(program, "model_matrix");
 				if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
 				glDrawElements(GL_TRIANGLES, 3 * 4 * 6, GL_UNSIGNED_INT, nullptr);
@@ -260,7 +304,6 @@ void render()
 	}
 
 	// build character model
-	glActiveTexture(GL_TEXTURE1);
 	uloc = glGetUniformLocation(program, "mode");		if (uloc > -1) glUniform1i(uloc, 2);
 	uloc = glGetUniformLocation(program, "animation");		if (uloc > -1) glUniform4i(uloc, 0, 0, crt.max_frame, crt.frame); // sprite_id, status, max_frame, frame;	
 	
@@ -421,6 +464,8 @@ bool user_init()
 	// texture
 	TEX_SKYBOX = cg_create_texture(skybox_image_path, true);  if (!TEX_SKYBOX) return false;
 	SPRITE_CRT = cg_create_texture(sprite_crt_run_image_path, true); if (!SPRITE_CRT) return false;
+	TEX_BLOCKS = cg_create_texture(blocks_image_path, true, GL_REPEAT, GL_NEAREST);
+	TEX_BLOCKS_OP = cg_create_texture(blocks_opacity_image_path, true);
 	return true;
 }
 
@@ -444,7 +489,7 @@ int main( int argc, char* argv[] )
 	glfwSetMouseButtonCallback( window, mouse );	// callback for mouse click inputs
 	glfwSetCursorPosCallback( window, motion );		// callback for mouse movement
 
-	engine->play2D(mp3_src_bgm, true);
+	//engine->play2D(mp3_src_bgm, true);
 
 	float tp, t = 0;
 	// enters rendering/event loop

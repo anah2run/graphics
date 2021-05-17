@@ -1,5 +1,7 @@
 #pragma once
 #include "particle.h"
+static const char* blocks_image_path = "../bin/textures/blocks.png";
+static const char* blocks_opacity_image_path = "../bin/textures/blocks-opacity.png";
 class Item;
 static const uint MAP_WIDTH = 100;	// ∏  ≥–¿Ã
 static const uint MAP_HEIGHT = 50;	// ∏  ≥Ù¿Ã
@@ -84,6 +86,8 @@ static const BlockProp	block_array[] = {
 	{	3,	3,	-1,	false	},		// hole
 	{	4,	4,	1,	false	},		// glass
 	{	5,	5,	8,	true,	1	},		// spike
+	{	6,	6,	2,	true	},		// item block
+	{	7,	7,	-1,	true	},		// WIN block
 };
 class Block {
 public:
@@ -127,7 +131,7 @@ public:
 std::vector<uint> block_indices = {};
 std::vector<vertex> create_block_vertices()
 {
-	vec2 tc[] = { {0,0},{1,0},{0,1},{1,1} };
+	vec2 tc[] = { {0.f,0.f},{0.1f,0.0f},{0.0f,0.1f},{0.1f,0.1f} };
 	vec3 normal[] = { {0,0,-1},{0,0,1},{-1,0,0},{1,0,0}, {0,1,0}, {0,-1,0} };
 	vec3 n_sample[] = {
 		vec3(-1,-1,-1), vec3(1,-1,-1), vec3(-1,1,-1), vec3(1,1,-1), // front
@@ -140,7 +144,7 @@ std::vector<vertex> create_block_vertices()
 	std::vector<vertex> v = {};
 	for (int i = 0; i < 6; i++) {
 		for (int j = 0; j < 4; j++) {
-			v.push_back({ (n_sample[i*4 + j] + vec3(1,1,0)) / 2, normal[i], tc[j] });
+			v.push_back({ (n_sample[i * 4 + j] + vec3(1,1,0)) / 2, normal[i], tc[j] + vec2(0.1f * i,0) });
 		}
 		block_indices.push_back(i * 4);
 		block_indices.push_back(i * 4 + 1);

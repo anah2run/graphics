@@ -2,6 +2,8 @@
 #include "sound.h"
 #include "particle.h"
 #include <cmath>
+static const int ENEMY_MAX_HP = 5;
+
 class Map;
 class Hitbox {
 public:
@@ -276,13 +278,13 @@ public:
 		printf("Enemy died\n");
 	}
 	Enemy(Map* mp, Character* cp, vec2 pos) {
-		mass = 5;
+		mass = 3;
 		invinc_time = 0;	// 피격 시 무적 시간
 		max_speed = 4.5f;	// 최대 이동속도
 		speed = 0.3f;
 		max_jump = 1.5f;	// 최대 점프
 		mapp = mp;
-		max_hp = 3;
+		max_hp = ENEMY_MAX_HP;
 		hp = max_hp;
 		position = pos;
 		crt = cp;
