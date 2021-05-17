@@ -1,4 +1,6 @@
 #pragma once
+#include "sound.h"
+#include "particle.h"
 #include <cmath>
 class Map;
 class Hitbox {
@@ -62,7 +64,7 @@ public:
 	bool	heal(int amount);
 	void	move_right();
 	void	move_left();
-	void	jump();
+	bool	jump();
 	bool	checkJump();
 	bool	checkDeath();
 	void	physics(float t, bool moving);
@@ -74,6 +76,7 @@ inline bool Character::hit(int damage, vec2 hit_pos) {
 	if (invinc_t <= 0) {
 		printf("took %d damage! hp: %d\n", damage, hp);
 		hp -= damage;
+		particles_list.push_back(Particle(0, position));
 		if (length(hit_pos) > 0)
 		{
 			velocity = hit_pos.normalize() * 10 / mass;
@@ -248,13 +251,17 @@ inline void Character::move_left()
 		velocity.x = std::max(-max_speed, velocity.x - speed);
 }
 
-inline void Character::jump()
+inline bool Character::jump()
 {
 	if (!is_jump) {
 		float jv = sqrt(2 * max_jump * mapp->gravity);
 		velocity.y = jv;
 		is_jump = true;
+		particles_list.push_back(Particle(2, position + vec2(0,hitbox.box_rec.y)));
+		return true;
 	}
+	return false;
+	
 }
 
 class Enemy : public Character

@@ -1,4 +1,5 @@
 #pragma once
+#include "particle.h"
 class Item;
 static const uint MAP_WIDTH = 100;	// ¸Ê ³ÐÀÌ
 static const uint MAP_HEIGHT = 50;	// ¸Ê ³ôÀÌ
@@ -104,6 +105,7 @@ public:
 	}	
 	void destroy() {
 		swap_block(0);//change block to air
+		particles_list.push_back(Particle(3, vec2(float(x),float(y)) + .5f));
 		if (item > 0) {
 			item_list.push_back(Item(item, vec2(x + .5f, y + .5f)));
 			printf("item dropped!\n");

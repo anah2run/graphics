@@ -1,4 +1,5 @@
 #pragma once
+#include "sound.h"
 class Character;
 
 struct BulletProp {
@@ -12,7 +13,7 @@ struct BulletProp {
 };
 static const BulletProp	bullet_array[] = {
 		{	0,	0,	1,	1,	10,	-1,		0	},		// normal bullet
-		{	1,	1,	10,	3,	20,	0.5f,	0.4f}		// rocket
+		{	1,	1,	10,	10,	20,	0.5f,	0.4f}		// rocket
 };
 enum BulletID {
 	PISTOL,
@@ -93,6 +94,7 @@ public:
 		else if (prop->gun_id == 3) {
 			crt->velocity.x += crt->direction.normalize().x * -5;
 		}
+		engine->play2D(mp3_src_gun);
 		printf("ammo left : %d\n", ammo);
 	}
 	void reload() {

@@ -1,4 +1,6 @@
 #pragma once
+static const char* sprite_crt_run_image_path = "../bin/textures/Biker_run.png";
+
 std::vector<uint> sprite_indices = { 0, 2, 1, 1, 2, 3 };
 std::vector<vertex> sprite_vertices = {
 	{{-0.5f,-0.5f,0}, {0,0,1}, {0,0}},
