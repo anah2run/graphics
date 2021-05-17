@@ -288,6 +288,7 @@ void render()
 				mat4 translate_matrix = mat4::translate(float(i), float(j), 0);
 				mat4 scale_matrix = mat4::scale(1);
 				switch (block_id) {
+				case 6:
 				case 2:
 				case 5://wood & spike
 					scale_matrix = mat4::scale(1, 1, float(bp->hp) / bp->prop->max_hp);
