@@ -71,7 +71,7 @@ void main()
 		len = len < 0.3f ? 0.3f : len;
 		l = normalize(lpos.xyz - (lpos.a == 0.0 ? vec3(0) : p));
 		h = normalize(l + v);
-		fragColor = min(fragColor + phong(l, n, h, Kd, Ia2[i], Id2[i], Is2[i]) / (len *len),2);
+		fragColor = min(fragColor + phong(l, n, h, Kd, Ia2[i], Id2[i], Is2[i]) / (len *len),1.5f);
 	}
 	switch (mode) {
 	case 9: // skybox
@@ -80,7 +80,7 @@ void main()
 	case 1: // block texture
 		fragColor *= texture(TEX_BLOCKS, tc+vec2(0,0.1f* (block_id-1)));
 		//if(block_id==4)	fragColor.a *= 0.15f;
-		fragColor.a *= texture(TEX_BLOCKS_OP, tc + vec2(0, 0.1f * (block_id - 1))).x;
+		fragColor.a = texture(TEX_BLOCKS_OP, tc + vec2(0, 0.1f * (block_id - 1))).x;
 		break;
 	case 2: // sprite animation
 		fragColor *= texture( SPRITE_CRT, vec2((animation.a + (tc.x*0.8f))/ animation.z ,tc.y * 0.8f));
@@ -92,7 +92,7 @@ void main()
 		fragColor *= particle_color;
 		break;
 	case -1: //shadow
-		fragColor *= vec4(0,0,0,0.5f);
+		fragColor = vec4(0,0,0,fragColor.x/3 );
 		break;
 	default:
 		fragColor = vec4(normalize(norm), 1.0f);

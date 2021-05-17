@@ -212,8 +212,8 @@ void update(float t)
 }
 void render()
 {
+	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
-	// clear screen (with background color) and clear depth buffer
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
 	// notify GL that we use our own program
@@ -272,19 +272,19 @@ void render()
 
 	int temp_y = map.shadow_pos(crt.position);
 	if (temp_y >= 0) {
-
-		model_matrix = mat4::translate(crt.position.x, temp_y + 0.01f, 0) * mat4::scale(crt.hitbox.width() / 2, 0, crt.hitbox.width() / 2);
+		model_matrix = mat4::translate(crt.position.x, temp_y + 0.01f, 0) * mat4::scale(crt.hitbox.width() / 2, 1, crt.hitbox.width() / 2);
 		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
-		glDrawElements(GL_TRIANGLES, 6 * 32, GL_UNSIGNED_INT, nullptr);
+		glDrawElements(GL_TRIANGLES, 3 * 32, GL_UNSIGNED_INT, nullptr);
 	}
 	for (std::list<Enemy>::iterator it = enemy_list.begin(); it != enemy_list.end(); it++) {
 		temp_y = map.shadow_pos(it->position);
-		model_matrix = mat4::translate(it->position.x, temp_y + 0.01f, 0) * mat4::scale(it->hitbox.width() / 2, 0, it->hitbox.width() / 2);
+		model_matrix = mat4::translate(it->position.x, temp_y + 0.01f, 0) * mat4::scale(it->hitbox.width() / 2, 1, it->hitbox.width() / 2);
 		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
-		glDrawElements(GL_TRIANGLES, 6 * 32, GL_UNSIGNED_INT, nullptr);
+		glDrawElements(GL_TRIANGLES, 3 * 32, GL_UNSIGNED_INT, nullptr);
 	}
 
 	// render sprites
+	glDisable(GL_CULL_FACE);
 	glBindVertexArray(sprite_vertex_array);
 
 	// render items
@@ -294,7 +294,6 @@ void render()
 		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
 		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
 	}
-	
 	// render enemies
 	uloc = glGetUniformLocation(program, "mode");		if (uloc > -1) glUniform1i(uloc, 0);
 	for (std::list<Enemy>::iterator it = enemy_list.begin(); it != enemy_list.end(); it++) {
@@ -322,6 +321,7 @@ void render()
 		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
 		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
 	}
+
 	glDisable(GL_DEPTH_TEST);
 	// render particles
 	uloc = glGetUniformLocation(program, "mode");		if (uloc > -1) glUniform1i(uloc, 4);
@@ -437,7 +437,7 @@ bool user_init()
 
 	// init GL states
 	glClearColor( 39/255.0f, 40/255.0f, 34/255.0f, 1.0f );	// set clear color
-	//glEnable( GL_CULL_FACE );								// turn on backface culling
+	glEnable( GL_CULL_FACE );								// turn on backface culling
 	glEnable( GL_DEPTH_TEST );								// turn on depth tests	
 	glEnable(GL_TEXTURE_2D);			// enable texturing
 	glEnable(GL_BLEND);
