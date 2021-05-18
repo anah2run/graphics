@@ -467,6 +467,7 @@ void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 			print_help();
 			printf("score:%d, total:%d\n", score,total_score);
 			printf("play_time:%f, total:%f\n", playtime, total_playtime);
+			printf("position: vec2(%3f, %3f)\n", crt.position.x, crt.position.y);
 		}
 		else if (key == GLFW_KEY_R)	game_status = 8;
 		else if (key == GLFW_KEY_W || key == GLFW_KEY_SPACE)
@@ -583,6 +584,7 @@ void load_map(Map* m) {
 	game_status = 0;
 	map = *m;
 	crt = Character(&map, map.crt_start_pos, difficulty);
+	gun.swap_gun(0);
 	particles_list.clear();
 	bullet_instances.clear();
 	enemy_list.clear();
@@ -670,7 +672,7 @@ int main( int argc, char* argv[] )
 
 	total_score = 0;
 	
-	run_stage(&Map(new_map2, 60, vec2(4, 3), new_map2_enemies, new_map2_items), mp3_src_bgm2);
+	run_stage(&Map(new_map2, 100, vec2(4, 3), new_map2_enemies, new_map2_items), mp3_src_bgm2);
 	run_stage(&Map(new_map1, 100, vec2(4, 3), new_map1_enemies, new_map1_items), mp3_src_bgm1);
 
 	// normal termination
