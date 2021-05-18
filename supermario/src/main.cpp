@@ -27,7 +27,6 @@ struct camera
 	mat4	view_matrix = mat4::look_at( eye, at, up );
 
 	float	fovy = PI/4; // must be in radian
-	float	aspect;
 	float	dnear = 1.0f;
 	float	dfar = 1000.0f;
 
@@ -38,6 +37,19 @@ struct camera
 // window objects
 GLFWwindow*	window = nullptr;
 ivec2		window_size = cg_default_window_size(); // initial window size
+float	aspect = window_size.x / float(window_size.y);
+mat4	aspect_matrix() {
+
+	return {
+	   std::min(aspect,1.0f), 0, 0, 0,
+	   0, std::min(aspect,1.0f), 0, 0,
+	   0, 0, 1, 0,
+	   0, 0, 0, 1
+	};
+}
+mat4	ortho(float l, float r, float t, float b, float n, float f) { 
+	return mat4::scale(2 / (r - l), 2 / (t - b), 2 / (n - f)) * mat4::translate(-(l + r) / 2, -(b + t) / 2, (n + f) / 2);
+};
 
 //*************************************
 // OpenGL objects
@@ -83,12 +95,12 @@ bool	b_key_jump = false;
 camera		cam;
 material_t	material;
 //*************************************
+
 void update(float t)
 {
 	if (game_status == 6) t = 0;
 	// update projection matrix
-	cam.aspect = window_size.x / float(window_size.y);
-	cam.projection_matrix = mat4::perspective(cam.fovy, cam.aspect, cam.dnear, cam.dfar);
+	cam.projection_matrix = mat4::perspective(cam.fovy, aspect, cam.dnear, cam.dfar);
 
 	// setup sunlight properties
 	glUniform4fv(glGetUniformLocation(program, "light_position"), 1, sunlight.position);
@@ -264,16 +276,13 @@ void update(float t)
 
 	// update uniform variables in vertex/fragment shaders
 	GLint uloc;
-	mat4 aspect_matrix =
-	{
-	   std::min(cam.aspect,1.0f), 0, 0, 0,
-	   0, std::min(cam.aspect,1.0f), 0, 0,
-	   0, 0, 1, 0,
-	   0, 0, 0, 1
-	};
-	uloc = glGetUniformLocation(program, "aspect_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, aspect_matrix);
+	uloc = glGetUniformLocation(program, "aspect_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, aspect_matrix());
 	uloc = glGetUniformLocation( program, "view_matrix" );			if(uloc>-1) glUniformMatrix4fv( uloc, 1, GL_TRUE, cam.view_matrix );
 	uloc = glGetUniformLocation( program, "projection_matrix" );	if(uloc>-1) glUniformMatrix4fv( uloc, 1, GL_TRUE, cam.projection_matrix );
+
+	mat4 orthogonal_projection_matrix = ortho(0, 400*aspect, 0, -400, cam.dnear, cam.dfar);
+	uloc = glGetUniformLocation(program, "orthogonal_projection_matrix");	if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, orthogonal_projection_matrix);
+
 
 	if (game_status < 3)
 	{
@@ -289,31 +298,34 @@ void render()
 {
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
-	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// notify GL that we use our own program
-	glUseProgram( program );
+	glUseProgram(program);
 
 	GLint uloc;
 	mat4 model_matrix;
+
+	// GAME_PART
+	uloc = glGetUniformLocation(program, "UI_mode");		if (uloc > -1) glUniform1i(uloc, 0);
 
 	// SKYBOX
 	glBindVertexArray(skybox_vertex_array);
 	uloc = glGetUniformLocation(program, "mode");
 	if (uloc > -1) glUniform1i(uloc, 9);
-	mat4 model_matrix_sky = mat4::translate(cam.eye.x, cam.eye.y - std::max(crt.position.y, BASE_CAM_Y)/10, 0) *
+	mat4 model_matrix_sky = mat4::translate(cam.eye.x, cam.eye.y - std::max(crt.position.y, BASE_CAM_Y) / 10, 0) *
 		mat4::rotate(vec3(1, 0, 0), -PI / 2) *
 		mat4::rotate(vec3(0, 0, 1), cam.eye.x / 20) *
 		mat4::scale(vec3(20.0f));
-	uloc = glGetUniformLocation(program, "model_matrix");			
+	uloc = glGetUniformLocation(program, "model_matrix");
 	if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix_sky);
 	glDrawElements(GL_TRIANGLES, NUM_TESS * (NUM_TESS + 1) * 6, GL_UNSIGNED_INT, nullptr);
 
 	// ¸Ê
 	glBindVertexArray(cube_vertex_array);
-	uloc = glGetUniformLocation(program, "mode");		
+	uloc = glGetUniformLocation(program, "mode");
 	if (uloc > -1) glUniform1i(uloc, 1);
-	
+
 	for (int i = 0; i < MAP_WIDTH; i++) {
 		for (int j = 0; j < MAP_HEIGHT; j++) {
 			int block_id = map.map[i][j].prop->block_id;
@@ -343,7 +355,7 @@ void render()
 
 	// ±×¸²ÀÚ 
 	glBindVertexArray(circle_vertex_array);
-	uloc = glGetUniformLocation(program, "mode");		
+	uloc = glGetUniformLocation(program, "mode");
 	if (uloc > -1) glUniform1i(uloc, -1);
 
 	int temp_y = map.shadow_pos(crt.position);
@@ -363,20 +375,12 @@ void render()
 	glDisable(GL_CULL_FACE);
 	glBindVertexArray(sprite_vertex_array);
 
-	// render items
-	uloc = glGetUniformLocation(program, "mode");		if (uloc > -1) glUniform1i(uloc, 2);
-	for (std::list<Item>::iterator it = item_list.begin(); it != item_list.end(); it++) {
-		model_matrix = mat4::translate(it->position.x, it->position.y, 0) * mat4::scale(0.9f, 0.9f, 1) * mat4::rotate(vec3(0, 1, 0),it->theta);
-		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
-		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
-	}
-
 	// sprite animation part
 	uloc = glGetUniformLocation(program, "mode");		if (uloc > -1) glUniform1i(uloc, 3);
 	// render enemies
 	int temp_z = 0;
 	for (std::list<Enemy>::iterator it = enemy_list.begin(); it != enemy_list.end(); it++) {
-		model_matrix = mat4::translate(it->position.x, it->position.y, ++temp_z*.001f) * mat4::scale(it->direction.x, 1, 1);
+		model_matrix = mat4::translate(it->position.x, it->position.y, ++temp_z * .001f) * mat4::scale(it->direction.x, 1, 1);
 		uloc = glGetUniformLocation(program, "model_matrix");	if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
 		uloc = glGetUniformLocation(program, "animation");		if (uloc > -1) glUniform4i(uloc, 1, it->status, max_frame[it->status], it->frame); // sprite_id, status, max_frame, frame;	
 		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
@@ -400,6 +404,14 @@ void render()
 	}
 
 	glDisable(GL_DEPTH_TEST);
+	// render items
+	uloc = glGetUniformLocation(program, "mode");		if (uloc > -1) glUniform1i(uloc, 2);
+	for (std::list<Item>::iterator it = item_list.begin(); it != item_list.end(); it++) {
+		uloc = glGetUniformLocation(program, "index");		if (uloc > -1) glUniform1i(uloc, it->item_code);
+		model_matrix = mat4::translate(it->position.x, it->position.y, 0) * mat4::scale(0.9f, 0.9f, 1) * mat4::rotate(vec3(0, 1, 0), it->theta);
+		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
+		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
+	}
 	// render particles
 	uloc = glGetUniformLocation(program, "mode");		if (uloc > -1) glUniform1i(uloc, 4);
 	for (std::list<Particle>::iterator it = particles_list.begin(); it != particles_list.end(); it++) {
@@ -413,6 +425,17 @@ void render()
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 		}
 	}
+
+	// UI
+	uloc = glGetUniformLocation(program, "UI_mode");		if (uloc > -1) glUniform1i(uloc, 1);
+	uloc = glGetUniformLocation(program, "index");		if (uloc > -1) glUniform1i(uloc, 0);
+
+	vec2 offset = vec2(40, 40);
+	for (int i = 0; i < crt.hp; i++) {
+		model_matrix = mat4::translate(offset.x + 55 * i, -offset.y, -1) * mat4::scale(40, 40, 1);
+		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
+		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
+	}
 	// swap front and back buffers, and display to screen
 	glfwSwapBuffers( window );
 }
@@ -423,6 +446,7 @@ void reshape( GLFWwindow* window, int width, int height )
 	// viewport: the window area that are affected by rendering 
 	window_size = ivec2(width,height);
 	glViewport( 0, 0, width, height );
+	aspect = window_size.x / float(window_size.y);
 }
 
 void print_help()
@@ -445,6 +469,10 @@ void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 			printf("play_time:%f, total:%f\n", playtime, total_playtime);
 		}
 		else if (key == GLFW_KEY_R)	game_status = 8;
+		else if (key == GLFW_KEY_W || key == GLFW_KEY_SPACE)
+		{
+			b_key_jump = true;
+		}
 		else if (key == GLFW_KEY_A)
 		{
 			b_key_left = true;
@@ -452,10 +480,6 @@ void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 		else if (key == GLFW_KEY_D)
 		{
 			b_key_right = true;
-		}
-		else if (key == GLFW_KEY_W || key == GLFW_KEY_SPACE) 
-		{
-			b_key_jump = true;
 		}
 		else if (key == GLFW_KEY_J)	b_key_fire = true;
 		else if (key == GLFW_KEY_1)	gun.swap_gun(0);
@@ -547,6 +571,7 @@ bool user_init()
 	SPRITE_ENEMY_JUMP = cg_create_texture(sprite_enemy_jump_image_path, true); if (!SPRITE_ENEMY_JUMP) return false;
 
 	SPRITE_HEART = cg_create_texture(sprite_heart_image_path, true); if (!SPRITE_HEART) return false;
+
 	return true;
 }
 
@@ -569,7 +594,7 @@ void load_map(Map* m) {
 		item_list.push_back(item);
 	}
 }
-void run_stage(Map* map) {
+void run_stage(Map* map, ISoundSource* bgm_src) {
 	float tp, t, timer, finish_time, start_time;
 	cam.eye.y = 7;
 	while (game_status != 7 && !glfwWindowShouldClose(window)) {
@@ -578,7 +603,7 @@ void run_stage(Map* map) {
 		start_time = t;
 		score = 0;
 		engine->stopAllSounds();
-		engine->play2D(mp3_src_bgm1, true);
+		engine->play2D(bgm_src, true);
 		// enters rendering/event loop
 		for (frame = 0; !glfwWindowShouldClose(window); frame++)
 		{
@@ -644,8 +669,10 @@ int main( int argc, char* argv[] )
 	glfwSetCursorPosCallback( window, motion );		// callback for mouse movement
 
 	total_score = 0;
-	run_stage(&Map(new_map1, 100, vec2(4, 3), new_map1_enemies, new_map1_items));
-	run_stage(&Map(new_map2, 60, vec2(4, 3), new_map2_enemies, new_map2_items));
+	
+	run_stage(&Map(new_map2, 60, vec2(4, 3), new_map2_enemies, new_map2_items), mp3_src_bgm2);
+	run_stage(&Map(new_map1, 100, vec2(4, 3), new_map1_enemies, new_map1_items), mp3_src_bgm1);
+
 	// normal termination
 	user_finalize();
 	cg_destroy_window(window);

@@ -19,6 +19,7 @@ uniform sampler2D	TEX_SKYBOX;
 uniform sampler2D	TEX_BLOCKS;
 uniform sampler2D	TEX_BLOCKS_OP;
 //
+uniform int			UI_mode;
 uniform int			mode;
 uniform int			index;
 uniform ivec4		animation; // sprite_id, status, max_frame, frame;
@@ -58,79 +59,86 @@ vec4 phong(vec3 l, vec3 n, vec3 h, vec4 Kd, vec4 ila, vec4 ild, vec4 ils)
 	return Ira + Ird + Irs;
 }
 
-
 void main()
 {
-	vec4 lpos = view_matrix * light_position;
-	vec3 n = normalize(norm);	// norm interpolated via rasterizer should be normalized again here
-	vec3 p = epos.xyz;			// 3D position of this fragment
-	vec3 l = normalize(lpos.xyz - (lpos.a == 0.0 ? vec3(0) : p));	// lpos.a==0 means directional light
-	vec3 v = normalize(-p);		// eye-epos = vec3(0)-epos
-	vec3 h = normalize(l + v);	// the halfway vector
-	//sunlight effect
-	fragColor = phong(l, n, h, Kd,Ia,Id,Is) * 1.7f;
+	if(UI_mode == 0)
+	{
+		vec4 sprite;
+		vec4 lpos = view_matrix * light_position;
+		vec3 n = normalize(norm);	// norm interpolated via rasterizer should be normalized again here
+		vec3 p = epos.xyz;			// 3D position of this fragment
+		vec3 l = normalize(lpos.xyz - (lpos.a == 0.0 ? vec3(0) : p));	// lpos.a==0 means directional light
+		vec3 v = normalize(-p);		// eye-epos = vec3(0)-epos
+		vec3 h = normalize(l + v);	// the halfway vector
+		//sunlight effect
+		fragColor = phong(l, n, h, Kd,Ia,Id,Is) * 1.7f;
 		
-	//lights effect
-	float len = 10.f;
-	for (int i = 0; i < NUM_LIGHT; i++) {
-		lpos = view_matrix * light_position2[i];
-		len = 0.4f*abs(length(lpos - epos));
-		len = len < 0.3f ? 0.3f : len;
-		l = normalize(lpos.xyz - (lpos.a == 0.0 ? vec3(0) : p));
-		h = normalize(l + v);
-		fragColor = min(fragColor + phong(l, n, h, Kd, Ia2[i], Id2[i], Is2[i]) / (len *len),1.5f);
+		//lights effect
+		float len = 10.f;
+		for (int i = 0; i < NUM_LIGHT; i++) {
+			lpos = view_matrix * light_position2[i];
+			len = 0.4f*abs(length(lpos - epos));
+			len = len < 0.3f ? 0.3f : len;
+			l = normalize(lpos.xyz - (lpos.a == 0.0 ? vec3(0) : p));
+			h = normalize(l + v);
+			fragColor = min(fragColor + phong(l, n, h, Kd, Ia2[i], Id2[i], Is2[i]) / (len *len),1.5f);
+		}
+
+		switch (mode) {
+		case 9: // skybox
+			fragColor = texture( TEX_SKYBOX, tc);
+			break;
+		case 1: // block texture
+			fragColor *= texture(TEX_BLOCKS, tc+vec2(0,0.1f* (index-1)));
+			fragColor.a = texture(TEX_BLOCKS_OP, tc + vec2(0, 0.1f * (index - 1))).x;
+			break;
+		case 2: // sprite
+			if(index == 0){ //heart
+				sprite = texture( SPRITE_HEART, tc);
+			}
+			else{
+				sprite = texture( SPRITE_HEART, tc);
+			}
+			fragColor *= sprite;
+			break;
+		case 3: // sprite animation
+			if(animation.x == 0){ //crt
+				if(animation.y == 0){
+					sprite = texture( SPRITE_CRT_IDLE, vec2((animation.a + (tc.x*0.8f) - 0.1f)/ animation.z ,tc.y * 0.8f));
+				}
+				else if(animation.y == 1){
+					sprite = texture( SPRITE_CRT_RUN, vec2((animation.a + (tc.x*0.8f) - 0.1f)/ animation.z ,tc.y * 0.8f));
+				}
+				else{
+					sprite = texture( SPRITE_CRT_JUMP, vec2((animation.a + (tc.x*0.8f) - 0.1f)/ animation.z ,tc.y * 0.8f));
+				}	
+			}
+			else{//enemy
+				if(animation.y == 0){ 
+					sprite = texture( SPRITE_ENEMY_IDLE, vec2((animation.a + (tc.x*0.8f) - 0.1f)/ animation.z ,tc.y * 0.8f));
+				}
+				else if(animation.y == 1){
+					sprite = texture( SPRITE_ENEMY_RUN, vec2((animation.a + (tc.x*0.8f) - 0.1f)/ animation.z ,tc.y * 0.8f));
+				}
+				else{
+					sprite = texture( SPRITE_ENEMY_JUMP, vec2((animation.a + (tc.x*0.8f) - 0.1f)/ animation.z ,tc.y * 0.8f));
+				}	
+			}
+			fragColor *= sprite;
+			break;
+		case 4: // particle
+			fragColor *= particle_color;
+			break;
+		case -1: //shadow
+			fragColor = vec4(0,0,0,fragColor.x/3 );
+			break;
+		default:
+			fragColor = vec4(normalize(norm), 1.0f);
+			break;
+		}
 	}
-	vec4 sprite;
-	switch (mode) {
-	case 9: // skybox
-		fragColor = texture( TEX_SKYBOX, tc);
-		break;
-	case 1: // block texture
-		fragColor *= texture(TEX_BLOCKS, tc+vec2(0,0.1f* (index-1)));
-		fragColor.a = texture(TEX_BLOCKS_OP, tc + vec2(0, 0.1f * (index - 1))).x;
-		break;
-	case 2: // sprite
-		if(index == 0){ //heart
-			sprite = texture( SPRITE_HEART, tc);
-		}
-		else{
-			sprite = texture( SPRITE_HEART, tc);
-		}
-		fragColor *= sprite;
-		break;
-	case 3: // sprite animation
-		if(animation.x == 0){ //crt
-			if(animation.y == 0){
-				sprite = texture( SPRITE_CRT_IDLE, vec2((animation.a + (tc.x*0.8f) - 0.1f)/ animation.z ,tc.y * 0.8f));
-			}
-			else if(animation.y == 1){
-				sprite = texture( SPRITE_CRT_RUN, vec2((animation.a + (tc.x*0.8f) - 0.1f)/ animation.z ,tc.y * 0.8f));
-			}
-			else{
-				sprite = texture( SPRITE_CRT_JUMP, vec2((animation.a + (tc.x*0.8f) - 0.1f)/ animation.z ,tc.y * 0.8f));
-			}	
-		}
-		else{//enemy
-			if(animation.y == 0){ 
-				sprite = texture( SPRITE_ENEMY_IDLE, vec2((animation.a + (tc.x*0.8f) - 0.1f)/ animation.z ,tc.y * 0.8f));
-			}
-			else if(animation.y == 1){
-				sprite = texture( SPRITE_ENEMY_RUN, vec2((animation.a + (tc.x*0.8f) - 0.1f)/ animation.z ,tc.y * 0.8f));
-			}
-			else{
-				sprite = texture( SPRITE_ENEMY_JUMP, vec2((animation.a + (tc.x*0.8f) - 0.1f)/ animation.z ,tc.y * 0.8f));
-			}	
-		}
-		fragColor *= sprite;
-		break;
-	case 4: // particle
-		fragColor *= particle_color;
-		break;
-	case -1: //shadow
-		fragColor = vec4(0,0,0,fragColor.x/3 );
-		break;
-	default:
-		fragColor = vec4(normalize(norm), 1.0f);
-		break;
+	else
+	{
+		fragColor = texture( SPRITE_HEART, tc);
 	}
 }
