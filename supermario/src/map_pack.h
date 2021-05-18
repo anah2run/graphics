@@ -2,7 +2,7 @@ class Enemy;
 static const uint MAP_WIDTH = 100;	// ∏  ≥–¿Ã
 static const uint MAP_HEIGHT = 50;	// ∏  ≥Ù¿Ã
 
-std::vector<vec2> new_map1_enemies = {
+static const std::vector<vec2> new_map1_enemies = {
 	{24, 6},
 	{25, 6},
 	{27, 6},
@@ -19,10 +19,10 @@ std::vector<vec2> new_map1_enemies = {
 	{91, 5},
 	{94, 7}
 };
-std::vector<Item> new_map1_items = {
+static const std::vector<Item> new_map1_items = {
 	Item(1,vec2(32.5,12)),
 };
-int new_map1[MAP_WIDTH][MAP_HEIGHT] = {
+static const int new_map1[MAP_WIDTH][MAP_HEIGHT] = {
 		{3,3,3,3,3,3,3,3,3,3,3,3}, //0
 		{1,1,1,},
 		{1,1,1,},
@@ -125,7 +125,7 @@ int new_map1[MAP_WIDTH][MAP_HEIGHT] = {
 		{3,3,3,3,3,3,3,3,3,3,3,3,3},
 };
 
-std::vector<vec2> new_map2_enemies = {
+static const std::vector<vec2> new_map2_enemies = {
 	{22, 3},
 	{38, 6},
 	{33, 6},
@@ -133,17 +133,17 @@ std::vector<vec2> new_map2_enemies = {
 	{50.5f, 4},
 	{52, 4},
 	{63,4},
-	{78,6},
-	{79,7},
-	{80,8},
+	{88,7},
+	{89,8},
+	{90,9},
 };
-std::vector<Item> new_map2_items = {
+static const std::vector<Item> new_map2_items = {
 	Item(5,vec2(50.5f,14)),
-	Item(5,vec2(87.5f,10)),
-	Item(5,vec2(87.5f,9)),
-	Item(5,vec2(87.5f,8)),
+	Item(5,vec2(97.5f,10)),
+	Item(5,vec2(97.5f,9)),
+	Item(5,vec2(97.5f,8)),
 };
-int new_map2[MAP_WIDTH][MAP_HEIGHT] = {
+static const int new_map2[MAP_WIDTH][MAP_HEIGHT] = {
 		{1,1,1,1,1,1,1,1,1,1,1,1,1,},
 		{1,1,1,},
 		{1,1,1,}, 
@@ -160,7 +160,7 @@ int new_map2[MAP_WIDTH][MAP_HEIGHT] = {
 		{1,1,1,},
 		{1,1,1,},
 		{1,1,1,},
-		{0,0,0},
+		{1,1,1,},
 		{0,0,0},
 		{0,0,0},
 		{0,0,0},
@@ -217,6 +217,16 @@ int new_map2[MAP_WIDTH][MAP_HEIGHT] = {
 		{1,1,1,0,0,0,1,0,0,16},
 		{1,1,1,0,0,0,1},
 		{1,1,1,},
+		{1,1,1,},
+		{1,1,1,},
+		{1,1,1,},
+		{0,0,0},
+		{0,0,0},
+		{0,0,0},
+		{0,0,0},
+		{1,1,1,2,2,2,},
+		{1,1,1,2,2,},
+		{1,1,1,2,},
 		{1,1,1,},
 		{1,1,1,},
 		{1,1,1,},

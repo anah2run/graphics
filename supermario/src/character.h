@@ -2,7 +2,6 @@
 #include "sound.h"
 #include "particle.h"
 #include <cmath>
-static const int ENEMY_MAX_HP = 5;
 static const std::vector<uint> max_frame = { 4,6,4 }; // 0:idle, 1:run ,2:jump
 
 class Map;
@@ -34,6 +33,7 @@ public:
 		mapp = p;
 		position = pos;
 		max_hp = m_hp;
+		hp = max_hp;
 	}
 	// 애니메이션 관련
 	int		sprite_index = 0;
@@ -289,15 +289,15 @@ public:
 	float	action_timer = 0;	// 행동 대기 시간
 	int		damage = 1;
 	bool	active = false;
-	Enemy(Map* mp, Character* cp, vec2 pos) {
-		mass = 2;
+	Enemy(Map* mp, Character* cp, vec2 pos, int m_hp = 5, float m = 2) {
+		mass = m;
 		invinc_time = 0.05f;	// 피격 시 무적 시간
 		direction = vec2(-1, 0);
 		max_speed = 4.5f;	// 최대 이동속도
 		speed = 0.3f;
 		max_jump = 1.5f;	// 최대 점프
 		mapp = mp;
-		max_hp = ENEMY_MAX_HP;
+		max_hp = m_hp;
 		hp = max_hp;
 		position = pos;
 		crt = cp;
@@ -329,8 +329,8 @@ inline void Enemy::move() {
 	else {
 		move_left();
 	}
-	if (action_timer <= 0 && (random_range(0, 1)<= 0.01f || crt->position.y > position.y)) {
+	if (action_timer <= 0 && (random_range(0, 1)<= 0.04f || crt->position.y > position.y)) {
 		jump();
-		action_timer = random_range(0.2f,1);
+		action_timer = random_range(0.1f,.7f);
 	}
 }

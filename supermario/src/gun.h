@@ -95,7 +95,6 @@ public:
 			crt->velocity.x += crt->direction.normalize().x * -5;
 		}
 		engine->play2D(mp3_src_gun);
-		printf("ammo left : %d\n", ammo);
 	}
 	void reload() {
 		ammo = prop->max_ammo;

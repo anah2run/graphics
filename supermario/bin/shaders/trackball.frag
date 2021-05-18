@@ -139,6 +139,15 @@ void main()
 	}
 	else
 	{
-		fragColor = texture( SPRITE_HEART, tc);
+		switch(index)
+		{
+			case 1 :
+				fragColor = texture( TEX_BLOCKS, tc);
+				break;
+			default:
+				fragColor = texture( SPRITE_HEART, tc);
+				break;
+		}
+		
 	}
 }

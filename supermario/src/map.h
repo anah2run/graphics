@@ -122,7 +122,7 @@ public:
 	}
 	Map() {
 	}
-	Map(int(*input)[MAP_HEIGHT], int m_w, vec2 start_pos, std::vector<vec2> enemies_pos, std::vector<Item> map_items = {}) {
+	Map(const int(*input)[MAP_HEIGHT], int m_w, vec2 start_pos, const std::vector<vec2> enemies_pos, const std::vector<Item> map_items = {}) {
 		map_width = m_w;
 		crt_start_pos = start_pos;
 		int temp;
