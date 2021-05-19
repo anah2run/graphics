@@ -199,7 +199,7 @@ void ending(ISoundSource* bgm_src) {
 	case 2:
 		printf("difficulty : HARD\n");
 		max_difficulty = 4;
-		difficulty = 4;
+		difficulty = 3;
 		break;
 	default:
 		printf("difficulty : IMPOSSIBLE\n");
