@@ -66,9 +66,19 @@ GLuint	SPRITE_ENEMY_RUN = 0;
 GLuint	SPRITE_ENEMY_IDLE = 0;
 GLuint	SPRITE_ENEMY_JUMP = 0;
 GLuint	SPRITE_HEART = 0;
+GLuint	SPRITE_COIN = 0;
+GLuint	SPRITE_SHOTGUN = 0;
+GLuint	SPRITE_MACHINEGUN = 0;
 GLuint	TEX_SKYBOX = 0;
 GLuint	TEX_BLOCKS = 0;
 GLuint	TEX_BLOCKS_OP = 0;
+GLuint	MENU_START = 0;
+GLuint	MENU_EASY = 0;
+GLuint	MENU_NORMAL = 0;
+GLuint	MENU_HARD = 0;
+GLuint	MENU_IMPOSSIBLE = 0;
+GLuint	MENU_HELP = 0;
+GLuint	MENU_END = 0;
 //*************************************
 // game state
 enum GAME_STATE {
@@ -83,13 +93,14 @@ enum GAME_STATE {
 	RESTART
 };
 GAME_STATE		game_state = EMPTY;
-static const std::vector<vec3> difficulty_prop = { //0:easy, 1:normal, 2: hard
+static const std::vector<vec3> difficulty_prop = { //0:easy, 1:normal, 2: hard, 3: impossible
 	{5, 3, 1}, // crt_maxhp, enemy_maxhp, enemy_mass
 	{3, 5, 2},
 	{2, 10, 4},
-	{1, 99, 10}
+	{1, 99, 1}
 };
 int		difficulty = 0;
+int		max_difficulty = 3;
 //*************************************
 // global variables
 int		frame = 0;				// index of rendering frames
@@ -97,6 +108,7 @@ int		score = 0;
 int		total_score = 0;
 float	playtime = 0;
 float	total_playtime = 0;
+int		menu_state = 0;
 // holder of vertices and indices of a unit circle
 Map map;
 std::list<Enemy> enemy_list;
@@ -111,7 +123,107 @@ bool	b_key_jump = false;
 camera		cam;
 material_t	material;
 //*************************************
+void main_menu(ISoundSource* bgm_src) {
+	engine->stopAllSounds();
+	engine->play2D(bgm_src, true);
+	menu_state = 0;
+	glEnable(GL_CULL_FACE);
+	glBindVertexArray(sprite_vertex_array);
+	int index;
+	while (!glfwWindowShouldClose(window) && menu_state >= 0) {
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, MENU_START);
+		glUniform1i(glGetUniformLocation(program, "MENU_START"), 0);
 
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, MENU_EASY);
+		glUniform1i(glGetUniformLocation(program, "MENU_EASY"), 1);
+
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, MENU_NORMAL);
+		glUniform1i(glGetUniformLocation(program, "MENU_NORMAL"), 2);
+
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, MENU_HARD);
+		glUniform1i(glGetUniformLocation(program, "MENU_HARD"),3);
+
+		glActiveTexture(GL_TEXTURE4);
+		glBindTexture(GL_TEXTURE_2D, MENU_IMPOSSIBLE);
+		glUniform1i(glGetUniformLocation(program, "MENU_IMPOSSIBLE"), 4);
+
+		glActiveTexture(GL_TEXTURE5);
+		glBindTexture(GL_TEXTURE_2D, MENU_HELP);
+		glUniform1i(glGetUniformLocation(program, "MENU_HELP"), 5);
+
+		glfwPollEvents();
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glUseProgram(program);
+
+		mat4 orthogonal_projection_matrix = ortho(-200 * aspect, 200 * aspect, 200, -200, cam.dnear, cam.dfar);
+		GLint uloc = glGetUniformLocation(program, "orthogonal_projection_matrix");	if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, orthogonal_projection_matrix);
+		mat4 model_matrix = mat4::translate(0, 0, -1) * aspect_matrix() * mat4::scale(400, 400, 1);
+		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
+		uloc = glGetUniformLocation(program, "UI_mode");		if (uloc > -1) glUniform1i(uloc, 1);
+
+		if (menu_state == 0) {
+			index = 0;
+		}
+		else if (menu_state == 1) {
+			index = difficulty + 1;
+		}
+
+		uloc = glGetUniformLocation(program, "index");		if (uloc > -1) glUniform1i(uloc, index);
+		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
+
+		glfwSwapBuffers(window);
+	}
+}
+void ending(ISoundSource* bgm_src) {
+	engine->stopAllSounds();
+	engine->play2D(bgm_src, true);
+	menu_state = 2;
+	glEnable(GL_CULL_FACE);
+	glBindVertexArray(sprite_vertex_array);
+
+	printf("\nCongratulation! Game Cleared!!\n");
+	switch (difficulty) {
+	case 0:
+		printf("difficulty : EASY\n");
+		break;
+	case 1:
+		printf("difficulty : NORMAL\n");
+		break;
+	case 2:
+		printf("difficulty : HARD\n");
+		max_difficulty = 4;
+		break;
+	default:
+		printf("difficulty : IMPOSSIBLE\n");
+		printf("YOU ARE THE BEST!\n");
+		break;
+	}
+	printf("total score : %d\n", total_score);
+	printf("play time : %3f\n", total_playtime);
+	while (!glfwWindowShouldClose(window) && menu_state == 2) {
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, MENU_END);
+		glUniform1i(glGetUniformLocation(program, "MENU_END"), 0);
+
+		glfwPollEvents();
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glUseProgram(program);
+
+		mat4 orthogonal_projection_matrix = ortho(-200 * aspect, 200 * aspect, 200, -200, cam.dnear, cam.dfar);
+		GLint uloc = glGetUniformLocation(program, "orthogonal_projection_matrix");	if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, orthogonal_projection_matrix);
+		mat4 model_matrix = mat4::translate(0, 0, -1) * aspect_matrix() * mat4::scale(400, 400, 1);
+		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
+		uloc = glGetUniformLocation(program, "UI_mode");		if (uloc > -1) glUniform1i(uloc, 1);
+		uloc = glGetUniformLocation(program, "index");		if (uloc > -1) glUniform1i(uloc, 6);
+		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
+
+		glfwSwapBuffers(window);
+	}
+}
 void update(float t)
 {
 	if (game_state == PAUSE || game_state == FAIL_WAIT) t = 0;
@@ -209,7 +321,7 @@ void update(float t)
 	for (std::list<Item>::iterator it = item_list.begin(); it != item_list.end(); it++) {
 		it->theta += t * 2;
 		if (it->theta > PI/2) it->theta -= PI;
-		if (crt.hitbox.collid(it->position - crt.position)) {
+		if (length(it->position - crt.position) <= .8f) {
 			score += 300;
 			switch (it->item_code) {
 			case 1:
@@ -224,8 +336,9 @@ void update(float t)
 			case 4:
 				gun.swap_gun(3);
 				break;
-			default:
+			default: //5
 				score += 700;
+				engine->play2D(mp3_src_coin);
 				break;
 			}
 			it = item_list.erase(it);
@@ -249,10 +362,6 @@ void update(float t)
 	cam.view_matrix = mat4::look_at(cam.eye, cam.at, cam.up);
 
 	// setup texture
-	glActiveTexture(GL_TEXTURE9);
-	glBindTexture(GL_TEXTURE_2D, TEX_SKYBOX);
-	glUniform1i(glGetUniformLocation(program, "TEX_SKYBOX"), 9);
-
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, TEX_BLOCKS);
 	glUniform1i(glGetUniformLocation(program, "TEX_BLOCKS"), 0);
@@ -285,10 +394,29 @@ void update(float t)
 	glBindTexture(GL_TEXTURE_2D, SPRITE_ENEMY_JUMP);
 	glUniform1i(glGetUniformLocation(program, "SPRITE_ENEMY_JUMP"), 7);
 
+	glActiveTexture(GL_TEXTURE8);
+	glBindTexture(GL_TEXTURE_2D, MENU_HELP);
+	glUniform1i(glGetUniformLocation(program, "MENU_HELP"), 8);
+
+	glActiveTexture(GL_TEXTURE9);
+	glBindTexture(GL_TEXTURE_2D, TEX_SKYBOX);
+	glUniform1i(glGetUniformLocation(program, "TEX_SKYBOX"), 9);
 
 	glActiveTexture(GL_TEXTURE10);
 	glBindTexture(GL_TEXTURE_2D, SPRITE_HEART);
 	glUniform1i(glGetUniformLocation(program, "SPRITE_HEART"), 10);
+
+	glActiveTexture(GL_TEXTURE11);
+	glBindTexture(GL_TEXTURE_2D, SPRITE_COIN);
+	glUniform1i(glGetUniformLocation(program, "SPRITE_COIN"), 11);
+
+	glActiveTexture(GL_TEXTURE12);
+	glBindTexture(GL_TEXTURE_2D, SPRITE_SHOTGUN);
+	glUniform1i(glGetUniformLocation(program, "SPRITE_SHOTGUN"), 12);
+
+	glActiveTexture(GL_TEXTURE13);
+	glBindTexture(GL_TEXTURE_2D, SPRITE_MACHINEGUN);
+	glUniform1i(glGetUniformLocation(program, "SPRITE_MACHINEGUN"), 13);
 
 	// update uniform variables in vertex/fragment shaders
 	GLint uloc;
@@ -300,6 +428,7 @@ void update(float t)
 	{
 		if (crt.stand_blockp != 0 && crt.stand_blockp->prop->block_id == 7) {
 			game_state = WIN;
+			crt.invincible = true;
 		}
 		else if (!crt.alive) {
 			game_state = FAIL;
@@ -440,8 +569,7 @@ void render()
 
 	// UI
 	uloc = glGetUniformLocation(program, "UI_mode");		if (uloc > -1) glUniform1i(uloc, 1);
-
-	uloc = glGetUniformLocation(program, "index");		if (uloc > -1) glUniform1i(uloc, 0);
+	uloc = glGetUniformLocation(program, "index");		if (uloc > -1) glUniform1i(uloc, 7);
 	vec2 offset = vec2(40, 40);
 	for (int i = 0; i < crt.hp; i++) {
 		mat4 orthogonal_projection_matrix = ortho(0, 400 * aspect, 0, -400, cam.dnear, cam.dfar);
@@ -451,7 +579,7 @@ void render()
 		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
 	}
 	if (game_state == PAUSE) {
-		uloc = glGetUniformLocation(program, "index");		if (uloc > -1) glUniform1i(uloc, 1);
+		uloc = glGetUniformLocation(program, "index");		if (uloc > -1) glUniform1i(uloc, 5);
 		mat4 orthogonal_projection_matrix = ortho(-200 * aspect, 200 * aspect, 200, -200, cam.dnear, cam.dfar);
 		uloc = glGetUniformLocation(program, "orthogonal_projection_matrix");	if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, orthogonal_projection_matrix);
 		model_matrix = mat4::translate(0,0,-1) * aspect_matrix() * mat4::scale(400, 400, 1);
@@ -461,7 +589,6 @@ void render()
 	// swap front and back buffers, and display to screen
 	glfwSwapBuffers( window );
 }
-
 void reshape( GLFWwindow* window, int width, int height )
 {
 	// set current viewport in pixels (win_x, win_y, win_width, win_height)
@@ -470,7 +597,6 @@ void reshape( GLFWwindow* window, int width, int height )
 	glViewport( 0, 0, width, height );
 	aspect = window_size.x / float(window_size.y);
 }
-
 void print_help()
 {
 	printf( "[help]\n" );
@@ -479,46 +605,75 @@ void print_help()
 	printf( "- press Home to reset camera\n" );
 	printf( "\n" );
 }
-
 void keyboard( GLFWwindow* window, int key, int scancode, int action, int mods )
 {
 	if(action==GLFW_PRESS)
 	{
-		if (key == GLFW_KEY_ESCAPE || key == GLFW_KEY_Q)	glfwSetWindowShouldClose(window, GL_TRUE);
+		if (key == GLFW_KEY_ESCAPE || key == GLFW_KEY_Q)
+		{
+			if (menu_state == 0) {
+				glfwSetWindowShouldClose(window, GL_TRUE);
+			}
+			else {
+				menu_state = 0;
+			}
+		}
 		else if (key == GLFW_KEY_H || key == GLFW_KEY_F1) {
 			if (game_state == PLAYING) {
 				print_help();
+				printf("score:%d, total:%d\n", score, total_score);
+				printf("play_time:%f, total:%f\n", playtime, total_playtime);
+				printf("position: vec2(%3f, %3f)\n", crt.position.x, crt.position.y);
+				engine->play2D(mp3_src_select);
 				game_state = PAUSE;
 			}
 			else if (game_state == PAUSE) {
+				engine->play2D(mp3_src_select);
 				game_state = PLAYING;
 			}
-			printf("score:%d, total:%d\n", score,total_score);
-			printf("play_time:%f, total:%f\n", playtime, total_playtime);
-			printf("position: vec2(%3f, %3f)\n", crt.position.x, crt.position.y);
 		}
 		else if (key == GLFW_KEY_R)	game_state = RESTART;
-		else if (key == GLFW_KEY_W || key == GLFW_KEY_SPACE)
+		else if (key == GLFW_KEY_W || key == GLFW_KEY_SPACE || key == GLFW_KEY_UP || key == GLFW_KEY_LEFT_ALT)
 		{
 			b_key_jump = true;
 		}
-		else if (key == GLFW_KEY_A)
+		else if (key == GLFW_KEY_A || key == GLFW_KEY_LEFT)
 		{
-			b_key_left = true;
+			if (game_state == PLAYING) b_key_left = true;
+			else if (menu_state == 1)
+			{
+				difficulty = (max_difficulty + --difficulty) % max_difficulty;
+				engine->play2D(mp3_src_select);
+			}
 		}
-		else if (key == GLFW_KEY_D)
+		else if (key == GLFW_KEY_D || key == GLFW_KEY_RIGHT)
 		{
-			b_key_right = true;
+			if(game_state == PLAYING) b_key_right = true;
+			else if (menu_state == 1)
+			{
+				difficulty = (++difficulty) % max_difficulty;
+				engine->play2D(mp3_src_select);
+			}
 		}
-		else if (key == GLFW_KEY_J)	b_key_fire = true;
+		else if (key == GLFW_KEY_ENTER) {
+			if (menu_state == 0) { //start to difficulty select
+				menu_state = 1;
+				engine->play2D(mp3_src_select);
+			}
+			else if (menu_state >= 1) { // difficulty select to game play
+				menu_state = -1;
+			}
+		}
+		if (key == GLFW_KEY_J || key == GLFW_KEY_LEFT_CONTROL) {
+			b_key_fire = true;
+		}
 	}
 	if (action == GLFW_RELEASE) {
-		if (key == GLFW_KEY_A) b_key_left = false;
-		if (key == GLFW_KEY_D) b_key_right = false;
-		if (key == GLFW_KEY_J) b_key_fire = false;
+		if (key == GLFW_KEY_A || key == GLFW_KEY_LEFT) b_key_left = false;
+		if (key == GLFW_KEY_D || key == GLFW_KEY_RIGHT) b_key_right = false;
+		if (key == GLFW_KEY_J || key == GLFW_KEY_LEFT_CONTROL) b_key_fire = false;
 	}
 }
-
 void mouse( GLFWwindow* window, int button, int action, int mods )
 {
 	if(button==GLFW_MOUSE_BUTTON_LEFT)
@@ -527,11 +682,9 @@ void mouse( GLFWwindow* window, int button, int action, int mods )
 		//else if (action == GLFW_RELEASE);
 	}
 }
-
 void motion( GLFWwindow* window, double x, double y )
 {
 }
-
 void update_vertex_buffer(const std::vector<vertex>& vertices, std::vector<uint>& indices, GLuint* v_array)
 {
 	static GLuint vertex_buffer = 0;	// ID holder for vertex buffer
@@ -558,7 +711,6 @@ void update_vertex_buffer(const std::vector<vertex>& vertices, std::vector<uint>
 	*v_array = cg_create_vertex_array(vertex_buffer, index_buffer);
 	if (!*v_array) { printf("%s(): failed to create vertex aray\n", __func__); return; }
 }
-
 bool user_init()
 {
 	// log hotkeys
@@ -594,16 +746,25 @@ bool user_init()
 	SPRITE_ENEMY_RUN = cg_create_texture(sprite_enemy_run_image_path, true); if (!SPRITE_ENEMY_RUN) return false;
 	SPRITE_ENEMY_IDLE = cg_create_texture(sprite_enemy_idle_image_path, true); if (!SPRITE_ENEMY_IDLE) return false;
 	SPRITE_ENEMY_JUMP = cg_create_texture(sprite_enemy_jump_image_path, true); if (!SPRITE_ENEMY_JUMP) return false;
-
 	SPRITE_HEART = cg_create_texture(sprite_heart_image_path, true); if (!SPRITE_HEART) return false;
+	SPRITE_COIN = cg_create_texture(sprite_coin_image_path, true); if (!SPRITE_COIN) return false;
+	SPRITE_SHOTGUN = cg_create_texture(sprite_shotgun_image_path, true); if (!SPRITE_SHOTGUN) return false;
+	SPRITE_MACHINEGUN = cg_create_texture(sprite_machinegun_image_path, true); if (!SPRITE_MACHINEGUN) return false;
+
+	// menu
+	MENU_START = cg_create_texture(menu_start_image_path, true); if (!MENU_START) return false;
+	MENU_EASY = cg_create_texture(menu_easy_image_path, true); if (!MENU_EASY) return false;
+	MENU_NORMAL = cg_create_texture(menu_normal_image_path, true); if (!MENU_NORMAL) return false;
+	MENU_HARD = cg_create_texture(menu_hard_image_path, true); if (!MENU_HARD) return false;
+	MENU_IMPOSSIBLE = cg_create_texture(menu_impossible_image_path, true); if (!MENU_IMPOSSIBLE) return false;
+	MENU_HELP = cg_create_texture(menu_help_image_path, true); if (!MENU_HELP) return false;
+	MENU_END = cg_create_texture(menu_end_image_path, true); if (!MENU_END) return false;
 
 	return true;
 }
-
 void user_finalize()
 {
 }
-
 void load_map(Map* m) {
 	vec3 diff = difficulty_prop[difficulty];
 	game_state = PLAYING;
@@ -621,18 +782,24 @@ void load_map(Map* m) {
 		item_list.push_back(item);
 	}
 }
-void run_stage(Map* map, ISoundSource* bgm_src) {
+int run_stage(Map* map, ISoundSource* bgm_src) {
+	if (glfwWindowShouldClose(window) || menu_state == 0) return -1;
+	game_state = PLAYING;
 	float tp, t, timer, finish_time, start_time;
 	cam.eye.y = BASE_CAM_Y;
-	while (game_state != MOVE_NEXT_STAGE && !glfwWindowShouldClose(window)) {
+	while (game_state != MOVE_NEXT_STAGE && !glfwWindowShouldClose(window) && menu_state != 0) {
 		load_map(map);
 		t = float(glfwGetTime());
 		start_time = t;
 		score = 0;
 		engine->stopAllSounds();
 		engine->play2D(bgm_src, true);
+		b_key_left = false;
+		b_key_right = false;
+		b_key_fire = false;
+		b_key_jump = false;
 		// enters rendering/event loop
-		for (frame = 0; !glfwWindowShouldClose(window); frame++)
+		for (frame = 0; !glfwWindowShouldClose(window) && menu_state != 0; frame++)
 		{
 			tp = t;
 			t = float(glfwGetTime());
@@ -674,12 +841,15 @@ void run_stage(Map* map, ISoundSource* bgm_src) {
 			}
 		}
 	}
-	if (game_state = MOVE_NEXT_STAGE) {
+	if (game_state == MOVE_NEXT_STAGE) {
 		playtime = finish_time - start_time;
 		total_playtime += playtime;
 		total_score += score;
+		return 0;
 	}
-	game_state = PLAYING;
+	else {
+		return -1;
+	}
 }
 int main( int argc, char* argv[] )
 {
@@ -698,14 +868,17 @@ int main( int argc, char* argv[] )
 	glfwSetCursorPosCallback( window, motion );		// callback for mouse movement
 
 	while (!glfwWindowShouldClose(window)) {
+		main_menu(mp3_src_bgm0);
 		total_score = 0;
-		run_stage(&Map(new_map2, 100, vec2(4, 4), new_map2_enemies, new_map2_items), mp3_src_bgm2);
-		run_stage(&Map(new_map1, 100, vec2(4, 4), new_map1_enemies, new_map1_items), mp3_src_bgm1);
+		total_playtime = 0;
+		if(run_stage(&Map(new_map2, 100, vec2(4, 4), new_map2_enemies, new_map2_items), mp3_src_bgm2) == -1) continue;
+		if(run_stage(&Map(new_map1, 100, vec2(4, 4), new_map1_enemies, new_map1_items), mp3_src_bgm1) == -1) continue;
+		if(game_state == MOVE_NEXT_STAGE) {
+			ending(mp3_src_bgm4);
+		}
 	}
-
 	// normal termination
 	user_finalize();
 	cg_destroy_window(window);
-
 	return 0;
 }

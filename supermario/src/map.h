@@ -58,7 +58,6 @@ public:
 		particles_list.push_back(Particle(3, vec2(float(x),float(y)) + .5f));
 		if (item > 0) {
 			item_list.push_back(Item(item, vec2(x + .5f, y + .5f)));
-			printf("item dropped!\n");
 		}
 
 	}
@@ -117,9 +116,6 @@ public:
 		if (bp == 0) return 0;
 		return bp->prop->block_id;
 	}
-	~Map() {
-		printf("map loaded\n");
-	}
 	Map() {
 	}
 	Map(const int(*input)[MAP_HEIGHT], int m_w, vec2 start_pos, const std::vector<vec2> enemies_pos, const std::vector<Item> map_items = {}) {
@@ -135,7 +131,6 @@ public:
 		}
 		enemy_pos_list = enemies_pos;
 		items = map_items;
-		
 	}
 	int shadow_pos(vec2 pos) {
 		int x = int(pos.x);

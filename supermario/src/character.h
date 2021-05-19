@@ -43,6 +43,7 @@ public:
 	float	frame_t = 0;
 	//
 
+	bool	invincible = false; // 무적
 	bool	alive = true;		// 생존
 	float	invinc_time = 1.5f;	// 피격 시 무적 시간
 	float	max_speed = 5.0f;	// 최대 이동속도
@@ -76,7 +77,7 @@ public:
 };
 
 inline bool Character::hit(int damage, vec2 hit_pos) {
-	if (invinc_t <= 0) {
+	if (invinc_t <= 0 && !invincible) {
 		hp -= damage;
 		particles_list.push_back(Particle(0, position));
 		if (length(hit_pos) > 0)
@@ -301,6 +302,9 @@ public:
 		hp = max_hp;
 		position = pos;
 		crt = cp;
+		if (max_hp >= 99) {
+			invincible = true;
+		}
 	}
 	void update(float t, bool moving);
 	void move();

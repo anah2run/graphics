@@ -12,12 +12,22 @@ uniform sampler2D	SPRITE_CRT_JUMP;
 uniform sampler2D	SPRITE_ENEMY_IDLE;
 uniform sampler2D	SPRITE_ENEMY_RUN;
 uniform sampler2D	SPRITE_ENEMY_JUMP;
-
 uniform sampler2D	SPRITE_HEART;
+uniform sampler2D	SPRITE_COIN;
+uniform sampler2D	SPRITE_SHOTGUN;
+uniform sampler2D	SPRITE_MACHINEGUN;
 
 uniform sampler2D	TEX_SKYBOX;
 uniform sampler2D	TEX_BLOCKS;
 uniform sampler2D	TEX_BLOCKS_OP;
+
+uniform sampler2D	MENU_START;
+uniform sampler2D	MENU_EASY;
+uniform sampler2D	MENU_NORMAL;
+uniform sampler2D	MENU_HARD;
+uniform sampler2D	MENU_IMPOSSIBLE;
+uniform sampler2D	MENU_HELP;
+uniform sampler2D	MENU_END;
 //
 uniform int			UI_mode;
 uniform int			mode;
@@ -93,11 +103,26 @@ void main()
 			fragColor.a = texture(TEX_BLOCKS_OP, tc + vec2(0, 0.1f * (index - 1))).x;
 			break;
 		case 2: // sprite
-			if(index == 0){ //heart
+			switch(index)
+			{
+			default: //heart
 				sprite = texture( SPRITE_HEART, tc);
-			}
-			else{
+				break;
+			case 1:
 				sprite = texture( SPRITE_HEART, tc);
+				break;
+			case 2:
+				sprite = texture( SPRITE_MACHINEGUN, tc);
+				break;
+			case 3:
+				sprite = texture( SPRITE_SHOTGUN, tc);
+				break;
+			case 4:
+				sprite = texture( SPRITE_HEART, tc);
+				break;
+			case 5:
+				sprite = texture( SPRITE_COIN, tc);
+				break;
 			}
 			fragColor *= sprite;
 			break;
@@ -141,11 +166,33 @@ void main()
 	{
 		switch(index)
 		{
-			case 1 :
-				fragColor = texture( TEX_BLOCKS, tc);
+			case 6 : // end
+				fragColor = texture( MENU_END, tc);
 				break;
-			default:
+			case 5 : // help
+				fragColor = texture( MENU_HELP, tc);
+				break;
+			case 4 : // impossible
+				fragColor = texture( MENU_IMPOSSIBLE, tc);
+				break;
+			case 3 : // hard
+				fragColor = texture( MENU_HARD, tc);
+				break;
+			case 2 : // normal
+				fragColor = texture( MENU_NORMAL, tc);
+				break;
+			case 1 : // easy
+				fragColor = texture( MENU_EASY, tc);
+				break;
+			case 0 : // start
+				fragColor = texture( MENU_START, tc);
+				break;
+			case 7 : // heart
 				fragColor = texture( SPRITE_HEART, tc);
+				break;
+	
+			default:
+				fragColor = vec4(normalize(norm), 1.0f);
 				break;
 		}
 		
