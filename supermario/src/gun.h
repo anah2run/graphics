@@ -84,12 +84,14 @@ public:
 	void fire() {
 		delay_t = prop->delay;
 		ammo = std::max(ammo-1,0);
-		bullet_instances.push_back(Bullet(prop->bullet_id, crt->position, crt->direction));
+		vec2 temp_pos = crt->position;
+		temp_pos.x += 0.3f * crt->direction.x;
+		bullet_instances.push_back(Bullet(prop->bullet_id, temp_pos, crt->direction));
 		if (prop->gun_id == 2) {
-			bullet_instances.push_back(Bullet(prop->bullet_id, crt->position, crt->direction + vec2(0,.3f)));
-			bullet_instances.push_back(Bullet(prop->bullet_id, crt->position, crt->direction + vec2(0,-.3f)));
-			bullet_instances.push_back(Bullet(prop->bullet_id, crt->position, crt->direction + vec2(0, .15f)));
-			bullet_instances.push_back(Bullet(prop->bullet_id, crt->position, crt->direction + vec2(0, -.15f)));
+			bullet_instances.push_back(Bullet(prop->bullet_id, temp_pos, crt->direction + vec2(0,.3f)));
+			bullet_instances.push_back(Bullet(prop->bullet_id, temp_pos, crt->direction + vec2(0,-.3f)));
+			bullet_instances.push_back(Bullet(prop->bullet_id, temp_pos, crt->direction + vec2(0, .15f)));
+			bullet_instances.push_back(Bullet(prop->bullet_id, temp_pos, crt->direction + vec2(0, -.15f)));
 		}
 		else if (prop->gun_id == 3) {
 			crt->velocity.x += crt->direction.normalize().x * -5;

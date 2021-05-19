@@ -16,6 +16,8 @@ uniform sampler2D	SPRITE_HEART;
 uniform sampler2D	SPRITE_COIN;
 uniform sampler2D	SPRITE_SHOTGUN;
 uniform sampler2D	SPRITE_MACHINEGUN;
+uniform sampler2D	SPRITE_BULLET;
+uniform sampler2D	SPRITE_PISTOL;
 
 uniform sampler2D	TEX_SKYBOX;
 uniform sampler2D	TEX_BLOCKS;
@@ -123,6 +125,9 @@ void main()
 			case 5:
 				sprite = texture( SPRITE_COIN, tc);
 				break;
+			case 6: //bullet
+				sprite = texture( SPRITE_BULLET, tc);
+				break;
 			}
 			fragColor *= sprite;
 			break;
@@ -190,7 +195,15 @@ void main()
 			case 7 : // heart
 				fragColor = texture( SPRITE_HEART, tc);
 				break;
-	
+			case 8: // pistol
+				fragColor = texture( SPRITE_PISTOL, tc);
+				break;
+			case 9: // machinegun
+				fragColor = texture( SPRITE_MACHINEGUN, tc);
+				break;
+			case 10: // shotgun
+				fragColor = texture( SPRITE_SHOTGUN, tc);
+				break;
 			default:
 				fragColor = vec4(normalize(norm), 1.0f);
 				break;

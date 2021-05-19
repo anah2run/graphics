@@ -7,8 +7,10 @@ static const char* sprite_enemy_idle_image_path = "../bin/textures/Cyborg_idle.p
 static const char* sprite_enemy_jump_image_path = "../bin/textures/Cyborg_jump.png";
 static const char* sprite_heart_image_path = "../bin/textures/heart.png";
 static const char* sprite_coin_image_path = "../bin/textures/coin.png";
-static const char* sprite_shotgun_image_path = "../bin/textures/heart.png";
-static const char* sprite_machinegun_image_path = "../bin/textures/heart.png";
+static const char* sprite_pistol_image_path = "../bin/textures/pistol.png";
+static const char* sprite_shotgun_image_path = "../bin/textures/shotgun.png";
+static const char* sprite_machinegun_image_path = "../bin/textures/machinegun.png";
+static const char* sprite_bullet_image_path = "../bin/textures/bullet.png";
 
 static const char* menu_start_image_path = "../bin/textures/menu_start.png";
 static const char* menu_easy_image_path = "../bin/textures/menu_easy.png";

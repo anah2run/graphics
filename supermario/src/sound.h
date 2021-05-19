@@ -22,6 +22,8 @@ ISoundSource* mp3_src_win;
 ISoundSource* mp3_src_fail;
 ISoundSource* mp3_src_select;
 ISoundSource* mp3_src_coin;
+ISoundSource* mp3_src_shotgun;
+ISoundSource* mp3_src_machinegun;
 //
 static const char* mp3_path_bgm0 = "../bin/sounds/bgm0.wav";
 static const char* mp3_path_bgm1 = "../bin/sounds/bgm1.wav";
@@ -42,6 +44,8 @@ static const char* mp3_path_win = "../bin/sounds/win.wav";
 static const char* mp3_path_fail = "../bin/sounds/fail.wav";
 static const char* mp3_path_select = "../bin/sounds/select.wav";
 static const char* mp3_path_coin = "../bin/sounds/coin.wav";
+static const char* mp3_path_machinegun = "../bin/sounds/machinegun.mp3";
+static const char* mp3_path_shotgun = "../bin/sounds/shotgun.mp3";
 //
 void init_sound() {
 	mp3_src_bgm0 = engine->addSoundSourceFromFile(mp3_path_bgm0);
@@ -100,4 +104,10 @@ void init_sound() {
 
 	mp3_src_coin = engine->addSoundSourceFromFile(mp3_path_coin);
 	mp3_src_coin->setDefaultVolume(0.5f);
+
+	mp3_src_machinegun = engine->addSoundSourceFromFile(mp3_path_machinegun);
+	mp3_src_machinegun->setDefaultVolume(0.3f);
+
+	mp3_src_shotgun = engine->addSoundSourceFromFile(mp3_path_shotgun);
+	mp3_src_shotgun->setDefaultVolume(0.3f);
 }

@@ -41,8 +41,8 @@ float	aspect = window_size.x / float(window_size.y);
 mat4	aspect_matrix() {
 
 	return {
-	   std::min(aspect,1.0f), 0, 0, 0,
-	   0, std::min(aspect,1.0f), 0, 0,
+	   std::min(aspect / 1.5f,1.0f), 0, 0, 0,
+	   0, std::min(aspect / 1.5f,1.0f), 0, 0,
 	   0, 0, 1, 0,
 	   0, 0, 0, 1
 	};
@@ -67,6 +67,8 @@ GLuint	SPRITE_ENEMY_IDLE = 0;
 GLuint	SPRITE_ENEMY_JUMP = 0;
 GLuint	SPRITE_HEART = 0;
 GLuint	SPRITE_COIN = 0;
+GLuint	SPRITE_BULLET = 0;
+GLuint	SPRITE_PISTOL= 0;
 GLuint	SPRITE_SHOTGUN = 0;
 GLuint	SPRITE_MACHINEGUN = 0;
 GLuint	TEX_SKYBOX = 0;
@@ -94,8 +96,8 @@ enum GAME_STATE {
 };
 GAME_STATE		game_state = EMPTY;
 static const std::vector<vec3> difficulty_prop = { //0:easy, 1:normal, 2: hard, 3: impossible
-	{5, 3, 1}, // crt_maxhp, enemy_maxhp, enemy_mass
-	{3, 5, 2},
+	{5, 4, 1}, // crt_maxhp, enemy_maxhp, enemy_mass
+	{3, 6, 2},
 	{2, 10, 4},
 	{1, 99, 1}
 };
@@ -127,6 +129,7 @@ void main_menu(ISoundSource* bgm_src) {
 	engine->stopAllSounds();
 	engine->play2D(bgm_src, true);
 	menu_state = 0;
+	game_state = EMPTY;
 	glEnable(GL_CULL_FACE);
 	glBindVertexArray(sprite_vertex_array);
 	int index;
@@ -161,7 +164,7 @@ void main_menu(ISoundSource* bgm_src) {
 
 		mat4 orthogonal_projection_matrix = ortho(-200 * aspect, 200 * aspect, 200, -200, cam.dnear, cam.dfar);
 		GLint uloc = glGetUniformLocation(program, "orthogonal_projection_matrix");	if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, orthogonal_projection_matrix);
-		mat4 model_matrix = mat4::translate(0, 0, -1) * aspect_matrix() * mat4::scale(400, 400, 1);
+		mat4 model_matrix = mat4::translate(0, 0, -1) * aspect_matrix() * mat4::scale(600, 400, 1);
 		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
 		uloc = glGetUniformLocation(program, "UI_mode");		if (uloc > -1) glUniform1i(uloc, 1);
 
@@ -196,6 +199,7 @@ void ending(ISoundSource* bgm_src) {
 	case 2:
 		printf("difficulty : HARD\n");
 		max_difficulty = 4;
+		difficulty = 4;
 		break;
 	default:
 		printf("difficulty : IMPOSSIBLE\n");
@@ -203,7 +207,7 @@ void ending(ISoundSource* bgm_src) {
 		break;
 	}
 	printf("total score : %d\n", total_score);
-	printf("play time : %3f\n", total_playtime);
+	printf("play time : %3f\n\n", total_playtime);
 	while (!glfwWindowShouldClose(window) && menu_state == 2) {
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, MENU_END);
@@ -215,7 +219,7 @@ void ending(ISoundSource* bgm_src) {
 
 		mat4 orthogonal_projection_matrix = ortho(-200 * aspect, 200 * aspect, 200, -200, cam.dnear, cam.dfar);
 		GLint uloc = glGetUniformLocation(program, "orthogonal_projection_matrix");	if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, orthogonal_projection_matrix);
-		mat4 model_matrix = mat4::translate(0, 0, -1) * aspect_matrix() * mat4::scale(400, 400, 1);
+		mat4 model_matrix = mat4::translate(0, 0, -1) * aspect_matrix() * mat4::scale(600, 400, 1);
 		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
 		uloc = glGetUniformLocation(program, "UI_mode");		if (uloc > -1) glUniform1i(uloc, 1);
 		uloc = glGetUniformLocation(program, "index");		if (uloc > -1) glUniform1i(uloc, 6);
@@ -329,9 +333,11 @@ void update(float t)
 				break;
 			case 2:
 				gun.swap_gun(1);
+				engine->play2D(mp3_src_machinegun);
 				break;
 			case 3:
 				gun.swap_gun(2);
+				engine->play2D(mp3_src_shotgun);
 				break;
 			case 4:
 				gun.swap_gun(3);
@@ -417,6 +423,14 @@ void update(float t)
 	glActiveTexture(GL_TEXTURE13);
 	glBindTexture(GL_TEXTURE_2D, SPRITE_MACHINEGUN);
 	glUniform1i(glGetUniformLocation(program, "SPRITE_MACHINEGUN"), 13);
+
+	glActiveTexture(GL_TEXTURE14);
+	glBindTexture(GL_TEXTURE_2D, SPRITE_BULLET);
+	glUniform1i(glGetUniformLocation(program, "SPRITE_BULLET"), 14);
+
+	glActiveTexture(GL_TEXTURE15);
+	glBindTexture(GL_TEXTURE_2D, SPRITE_PISTOL);
+	glUniform1i(glGetUniformLocation(program, "SPRITE_PISTOL"), 15);
 
 	// update uniform variables in vertex/fragment shaders
 	GLint uloc;
@@ -537,6 +551,7 @@ void render()
 
 	// build bullets
 	uloc = glGetUniformLocation(program, "mode");		if (uloc > -1) glUniform1i(uloc, 2);
+	uloc = glGetUniformLocation(program, "index");		if (uloc > -1) glUniform1i(uloc, 6);
 	std::list<Bullet>::iterator it;
 	for (it = bullet_instances.begin(); it != bullet_instances.end(); it++) {
 		model_matrix = mat4::translate(it->position.x, it->position.y, ++temp_z * .001f) * mat4::scale(0.4f, 0.4f, 1);
@@ -570,19 +585,26 @@ void render()
 	// UI
 	uloc = glGetUniformLocation(program, "UI_mode");		if (uloc > -1) glUniform1i(uloc, 1);
 	uloc = glGetUniformLocation(program, "index");		if (uloc > -1) glUniform1i(uloc, 7);
+	mat4 orthogonal_projection_matrix = ortho(0, 400 * aspect, 0, -400, cam.dnear, cam.dfar);
+	uloc = glGetUniformLocation(program, "orthogonal_projection_matrix");	if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, orthogonal_projection_matrix);
 	vec2 offset = vec2(40, 40);
-	for (int i = 0; i < crt.hp; i++) {
-		mat4 orthogonal_projection_matrix = ortho(0, 400 * aspect, 0, -400, cam.dnear, cam.dfar);
-		uloc = glGetUniformLocation(program, "orthogonal_projection_matrix");	if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, orthogonal_projection_matrix);
-		model_matrix = mat4::translate(offset.x + 55 * i, -offset.y, -1) * mat4::scale(40, 40, 1);
+	for (int i = 0; i < crt.hp; i++) { //HP HEART
+		model_matrix = mat4::translate(offset.x + 45 * i, -offset.y, -1) * mat4::scale(35, 35, 1);
 		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
 		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
 	}
-	if (game_state == PAUSE) {
+	// GUN
+	offset = vec2(40, 80);
+	uloc = glGetUniformLocation(program, "index");		if (uloc > -1) glUniform1i(uloc, gun.prop->gun_id + 8);
+	model_matrix = mat4::translate(offset.x , -offset.y, -1 ) * mat4::scale(35, 35, 1);
+	uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
+	glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
+	//HELP
+	if (game_state == PAUSE) { 
 		uloc = glGetUniformLocation(program, "index");		if (uloc > -1) glUniform1i(uloc, 5);
 		mat4 orthogonal_projection_matrix = ortho(-200 * aspect, 200 * aspect, 200, -200, cam.dnear, cam.dfar);
 		uloc = glGetUniformLocation(program, "orthogonal_projection_matrix");	if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, orthogonal_projection_matrix);
-		model_matrix = mat4::translate(0,0,-1) * aspect_matrix() * mat4::scale(400, 400, 1);
+		model_matrix = mat4::translate(0,0,-1) * aspect_matrix() * mat4::scale(600, 400, 1);
 		uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
 		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
 	}
@@ -750,7 +772,8 @@ bool user_init()
 	SPRITE_COIN = cg_create_texture(sprite_coin_image_path, true); if (!SPRITE_COIN) return false;
 	SPRITE_SHOTGUN = cg_create_texture(sprite_shotgun_image_path, true); if (!SPRITE_SHOTGUN) return false;
 	SPRITE_MACHINEGUN = cg_create_texture(sprite_machinegun_image_path, true); if (!SPRITE_MACHINEGUN) return false;
-
+	SPRITE_BULLET = cg_create_texture(sprite_bullet_image_path, true); if (!SPRITE_BULLET) return false;
+	SPRITE_PISTOL = cg_create_texture(sprite_pistol_image_path, true); if (!SPRITE_PISTOL) return false;
 	// menu
 	MENU_START = cg_create_texture(menu_start_image_path, true); if (!MENU_START) return false;
 	MENU_EASY = cg_create_texture(menu_easy_image_path, true); if (!MENU_EASY) return false;
