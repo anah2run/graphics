@@ -86,6 +86,7 @@ public:
 		ammo = std::max(ammo-1,0);
 		vec2 temp_pos = crt->position;
 		temp_pos.x += 0.3f * crt->direction.x;
+		temp_pos.y += 0.1f;
 		bullet_instances.push_back(Bullet(prop->bullet_id, temp_pos, crt->direction));
 		if (prop->gun_id == 2) {
 			bullet_instances.push_back(Bullet(prop->bullet_id, temp_pos, crt->direction + vec2(0,.3f)));

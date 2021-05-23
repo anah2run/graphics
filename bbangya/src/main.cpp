@@ -206,7 +206,6 @@ void ending(ISoundSource* bgm_src) {
 	case 2:
 		printf("difficulty : HARD\n");
 		max_difficulty = 4;
-		difficulty = 3;
 		break;
 	default:
 		printf("difficulty : IMPOSSIBLE\n");
@@ -251,9 +250,10 @@ void ending(ISoundSource* bgm_src) {
 			break;
 		case 2:
 			render_text("difficulty : HARD", window_size.x / 2 - 100, 250, 0.5f, vec4(1.0f, 1.0f, 1.0f, 1.0f), dpi_scale);
+			difficulty = 3;
 			break;
 		default:
-			render_text("difficulty : IMPOSSIBLE", window_size.x / 2 - 100, 250, 0.5f, vec4(1.0f, 1.0f, 1.0f, 1.0f), dpi_scale);
+			render_text("difficulty : IMPOSSIBLE", window_size.x / 2 - 120, 250, 0.5f, vec4(1.0f, 1.0f, 1.0f, 1.0f), dpi_scale);
 			render_text("YOU ARE THE BEST!", window_size.x / 2 - 100, 600, 0.5f, vec4(1.0f, 0.0f, 0.0f, 1.0f), dpi_scale);
 			break;
 		}

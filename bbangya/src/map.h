@@ -19,7 +19,7 @@ static const BlockProp	block_array[] = {
 	{	2,	2,	5,	true	},		// wood
 	{	3,	3,	-1,	false	},		// hole
 	{	4,	4,	1,	true	},		// glass
-	{	5,	5,	8,	true,	1	},		// spike
+	{	5,	5,	5,	true,	1	},		// spike
 	{	6,	6,	3,	true	},		// item block
 	{	7,	7,	-1,	true	},		// WIN block
 };
