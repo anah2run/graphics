@@ -57,7 +57,7 @@ public:
 		swap_block(0);//change block to air
 		particles_list.push_back(Particle(3, vec2(float(x),float(y)) + .5f));
 		if (item > 0) {
-			item_list.push_back(Item(item, vec2(x + .5f, y + .5f)));
+			item_list.push_back(Item(item, vec2(float(x), float(y)) + .5f));
 		}
 
 	}
@@ -66,6 +66,7 @@ public:
 		hp -= damage;
 		if (checkDestroy()) {
 			destroy();
+			engine->play2D(mp3_src_box);
 		}
 	}
 };

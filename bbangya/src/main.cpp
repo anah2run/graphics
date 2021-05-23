@@ -11,8 +11,15 @@
 #include "skybox.h"
 #include "sound.h"
 #include "particle.h"
+#include<string>
+#include<iostream>
 //*************************************
 // global constants
+
+bool init_text();
+void render_text(std::string text, GLint x, GLint y, GLfloat scale, vec4 color, GLfloat dpi_scale = 1.0f);
+float	a = 0.0f;
+
 static const char*	window_name = "bbangya";
 static const char*	vert_shader_path = "../bin/shaders/trackball.vert";
 static const char*	frag_shader_path = "../bin/shaders/trackball.frag";
@@ -225,14 +232,50 @@ void ending(ISoundSource* bgm_src) {
 		uloc = glGetUniformLocation(program, "index");		if (uloc > -1) glUniform1i(uloc, 6);
 		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
 
+
+
+		std::string s = std::to_string(total_score);
+		std::string t = std::to_string(total_playtime);
+		float dpi_scale = cg_get_dpi_scale();
+
+		a = abs(sin(float(glfwGetTime()) * 2.5f));
+
+		render_text("CONGRATULATION!", window_size.x / 2 - 120, 100, 0.8f, vec4(1.0f, 0.0f, 0.0f, a), dpi_scale);
+		render_text("Mady by Duwon Kim, Kiryun Jang, Hyunwoo Jo", window_size.x / 2 - 260, 150, 0.5f, vec4(1.0f, 0.0f, 0.0f, a), dpi_scale);
+		switch (difficulty) {
+		case 0:
+			render_text("difficulty : EASY", window_size.x / 2 - 100, 250, 0.5f, vec4(1.0f, 1.0f, 1.0f, 1.0f), dpi_scale);
+			break;
+		case 1:
+			render_text("difficulty : NORMAL", window_size.x / 2 - 100, 250, 0.5f, vec4(1.0f, 1.0f, 1.0f, 1.0f), dpi_scale);
+			break;
+		case 2:
+			render_text("difficulty : HARD", window_size.x / 2 - 100, 250, 0.5f, vec4(1.0f, 1.0f, 1.0f, 1.0f), dpi_scale);
+			break;
+		default:
+			render_text("difficulty : IMPOSSIBLE", window_size.x / 2 - 100, 250, 0.5f, vec4(1.0f, 1.0f, 1.0f, 1.0f), dpi_scale);
+			render_text("YOU ARE THE BEST!", window_size.x / 2 - 100, 600, 0.5f, vec4(1.0f, 0.0f, 0.0f, 1.0f), dpi_scale);
+			break;
+		}
+
+		render_text("score:", window_size.x / 2 - 50, 300, 0.5f, vec4(1.0f, 1.0f, 1.0f, 1.0f), dpi_scale);
+		render_text(s, window_size.x / 2 + 40, 300, 0.5f, vec4(1.0f, 1.0f, 1.0f, 1.0f), dpi_scale);
+		render_text("time:", window_size.x / 2 - 80, 350, 0.5f, vec4(1.0f, 1.0f, 1.0f, 1.0f), dpi_scale);
+		render_text(t, window_size.x / 2, 350, 0.5f, vec4(1.0f, 1.0f, 1.0f, 1.0f), dpi_scale);
+
 		glfwSwapBuffers(window);
 	}
+
+
+
 }
 void update(float t)
 {
 	if (game_state == PAUSE || game_state == FAIL_WAIT) t = 0;
 	// update projection matrix
 	cam.projection_matrix = mat4::perspective(cam.fovy, aspect, cam.dnear, cam.dfar);
+
+	
 
 	// setup sunlight properties
 	glUniform4fv(glGetUniformLocation(program, "light_position"), 1, sunlight.position);
@@ -320,6 +363,8 @@ void update(float t)
 			score += 300;
 		}
 	}
+
+	a = abs(sin(float(glfwGetTime()) * 2.5f));
 
 	// items
 	for (std::list<Item>::iterator it = item_list.begin(); it != item_list.end(); it++) {
@@ -464,6 +509,8 @@ void render()
 	// GAME_PART
 	uloc = glGetUniformLocation(program, "UI_mode");		if (uloc > -1) glUniform1i(uloc, 0);
 
+	
+
 	// SKYBOX
 	glBindVertexArray(skybox_vertex_array);
 	uloc = glGetUniformLocation(program, "mode");
@@ -507,6 +554,8 @@ void render()
 			}
 		}
 	}
+	
+
 
 	// ±×¸²ÀÚ 
 	glBindVertexArray(circle_vertex_array);
@@ -599,6 +648,11 @@ void render()
 	model_matrix = mat4::translate(offset.x , -offset.y, -1 ) * mat4::scale(35, 35, 1);
 	uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
 	glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
+
+	
+
+	
+
 	//HELP
 	if (game_state == PAUSE) { 
 		uloc = glGetUniformLocation(program, "index");		if (uloc > -1) glUniform1i(uloc, 5);
@@ -783,6 +837,10 @@ bool user_init()
 	MENU_HELP = cg_create_texture(menu_help_image_path, true); if (!MENU_HELP) return false;
 	MENU_END = cg_create_texture(menu_end_image_path, true); if (!MENU_END) return false;
 
+	if (!init_text()) return false;
+
+	
+
 	return true;
 }
 void user_finalize()
@@ -802,18 +860,18 @@ void load_map(Map* m) {
 	}
 	item_list.clear();
 	for (auto item : map.items){
+		item.position += 0.5f;
 		item_list.push_back(item);
 	}
 }
 int run_stage(Map* map, ISoundSource* bgm_src) {
 	if (glfwWindowShouldClose(window) || menu_state == 0) return -1;
 	game_state = PLAYING;
-	float tp, t, timer, finish_time, start_time;
+	float tp, t, timer;
 	cam.eye.y = BASE_CAM_Y;
 	while (game_state != MOVE_NEXT_STAGE && !glfwWindowShouldClose(window) && menu_state != 0) {
 		load_map(map);
 		t = float(glfwGetTime());
-		start_time = t;
 		score = 0;
 		engine->stopAllSounds();
 		engine->play2D(bgm_src, true);
@@ -830,7 +888,6 @@ int run_stage(Map* map, ISoundSource* bgm_src) {
 			update(t - tp);		// per-frame update
 			render();			// per-frame render
 			if (game_state == WIN) {//win
-				finish_time = t;
 				score += 1000;
 				timer = t;
 				engine->stopAllSounds();
@@ -859,13 +916,12 @@ int run_stage(Map* map, ISoundSource* bgm_src) {
 			else if (game_state == RESTART) { //restart
 				break;
 			}
-			else {
-				playtime = t - start_time;
+			else if(game_state == PLAYING) {
+				playtime += t - tp;
 			}
 		}
 	}
 	if (game_state == MOVE_NEXT_STAGE) {
-		playtime = finish_time - start_time;
 		total_playtime += playtime;
 		total_score += score;
 		return 0;
@@ -896,6 +952,7 @@ int main( int argc, char* argv[] )
 		total_playtime = 0;
 		if(run_stage(&Map(new_map2, 100, vec2(4, 4), new_map2_enemies, new_map2_items), mp3_src_bgm2) == -1) continue;
 		if(run_stage(&Map(new_map1, 100, vec2(4, 4), new_map1_enemies, new_map1_items), mp3_src_bgm1) == -1) continue;
+		if (run_stage(&Map(new_map3, 100, vec2(4, 4), new_map3_enemies, new_map3_items), mp3_src_bgm1) == -1) continue;
 		if(game_state == MOVE_NEXT_STAGE) {
 			ending(mp3_src_bgm4);
 		}

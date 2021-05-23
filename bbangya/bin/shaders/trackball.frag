@@ -134,24 +134,24 @@ void main()
 		case 3: // sprite animation
 			if(animation.x == 0){ //crt
 				if(animation.y == 0){
-					sprite = texture( SPRITE_CRT_IDLE, vec2((animation.a + (tc.x*0.8f) - 0.1f)/ animation.z ,tc.y * 0.8f));
+					sprite = texture( SPRITE_CRT_IDLE, vec2((animation.a + tc.x) / animation.z ,tc.y * 0.9f + 0.1f));
 				}
 				else if(animation.y == 1){
-					sprite = texture( SPRITE_CRT_RUN, vec2((animation.a + (tc.x*0.8f) - 0.1f)/ animation.z ,tc.y * 0.8f));
+					sprite = texture( SPRITE_CRT_RUN, vec2((animation.a + tc.x) / animation.z ,tc.y * 0.9f + 0.1f));
 				}
 				else{
-					sprite = texture( SPRITE_CRT_JUMP, vec2((animation.a + (tc.x*0.8f) - 0.1f)/ animation.z ,tc.y * 0.8f));
+					sprite = texture( SPRITE_CRT_JUMP, vec2((animation.a + tc.x)/ animation.z ,tc.y * 0.9f + 0.1f));
 				}	
 			}
 			else{//enemy
 				if(animation.y == 0){ 
-					sprite = texture( SPRITE_ENEMY_IDLE, vec2((animation.a + (tc.x*0.8f) - 0.1f)/ animation.z ,tc.y * 0.8f));
+					sprite = texture( SPRITE_ENEMY_IDLE, vec2((animation.a + tc.x) /  animation.z ,tc.y * 0.9f + 0.1f));
 				}
 				else if(animation.y == 1){
-					sprite = texture( SPRITE_ENEMY_RUN, vec2((animation.a + (tc.x*0.8f) - 0.1f)/ animation.z ,tc.y * 0.8f));
+					sprite = texture( SPRITE_ENEMY_RUN, vec2((animation.a + tc.x) / animation.z ,tc.y * 0.9f + 0.1f));
 				}
 				else{
-					sprite = texture( SPRITE_ENEMY_JUMP, vec2((animation.a + (tc.x*0.8f) - 0.1f)/ animation.z ,tc.y * 0.8f));
+					sprite = texture( SPRITE_ENEMY_JUMP, vec2((animation.a + tc.x) / animation.z ,tc.y * 0.9f + 0.1f));
 				}	
 			}
 			fragColor *= sprite;

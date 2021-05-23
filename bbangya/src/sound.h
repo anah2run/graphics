@@ -24,6 +24,7 @@ ISoundSource* mp3_src_select;
 ISoundSource* mp3_src_coin;
 ISoundSource* mp3_src_shotgun;
 ISoundSource* mp3_src_machinegun;
+ISoundSource* mp3_src_box;
 //
 static const char* mp3_path_bgm0 = "../bin/sounds/bgm0.wav";
 static const char* mp3_path_bgm1 = "../bin/sounds/bgm1.wav";
@@ -36,7 +37,7 @@ static const char* mp3_path_step = "../bin/sounds/step.ogg";
 static const char* mp3_path_enmhit = "../bin/sounds/hit.wav";
 static const char* mp3_path_enmboom = "../bin/sounds/boom.wav";
 static const char* mp3_path_blockhit = "../bin/sounds/solid.wav";
-static const char* mp3_path_scream = "../bin/sounds/scream.wav";
+static const char* mp3_path_scream = "../bin/sounds/scream.mp3";
 static const char* mp3_path_heart = "../bin/sounds/heart.wav";
 static const char* mp3_path_burned = "../bin/sounds/burned.wav";
 static const char* mp3_path_glass = "../bin/sounds/glass.mp3";
@@ -46,6 +47,7 @@ static const char* mp3_path_select = "../bin/sounds/select.wav";
 static const char* mp3_path_coin = "../bin/sounds/coin.wav";
 static const char* mp3_path_machinegun = "../bin/sounds/machinegun.mp3";
 static const char* mp3_path_shotgun = "../bin/sounds/shotgun.mp3";
+static const char* mp3_path_box = "../bin/sounds/box.mp3";
 //
 void init_sound() {
 	mp3_src_bgm0 = engine->addSoundSourceFromFile(mp3_path_bgm0);
@@ -106,8 +108,11 @@ void init_sound() {
 	mp3_src_coin->setDefaultVolume(0.5f);
 
 	mp3_src_machinegun = engine->addSoundSourceFromFile(mp3_path_machinegun);
-	mp3_src_machinegun->setDefaultVolume(0.3f);
+	mp3_src_machinegun->setDefaultVolume(0.8f);
 
 	mp3_src_shotgun = engine->addSoundSourceFromFile(mp3_path_shotgun);
-	mp3_src_shotgun->setDefaultVolume(0.3f);
+	mp3_src_shotgun->setDefaultVolume(0.8f);
+
+	mp3_src_box = engine->addSoundSourceFromFile(mp3_path_box);
+	mp3_src_box->setDefaultVolume(1.0f);
 }
