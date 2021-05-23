@@ -250,7 +250,6 @@ void ending(ISoundSource* bgm_src) {
 			break;
 		case 2:
 			render_text("difficulty : HARD", window_size.x / 2 - 100, 250, 0.5f, vec4(1.0f, 1.0f, 1.0f, 1.0f), dpi_scale);
-			difficulty = 3;
 			break;
 		default:
 			render_text("difficulty : IMPOSSIBLE", window_size.x / 2 - 120, 250, 0.5f, vec4(1.0f, 1.0f, 1.0f, 1.0f), dpi_scale);
@@ -404,7 +403,7 @@ void update(float t)
 
 	// camera & skybox
 	float temp_x = crt.position.x;
-	temp_x = std::min(std::max(temp_x, 10.0f), map.map_width -5.0f);
+	temp_x = std::min(std::max(temp_x, 8.0f), map.map_width -5.0f);
 	float temp_y = std::max(crt.position.y, BASE_CAM_Y);
 	temp_y = cam.eye.y - (cam.eye.y - temp_y) * 0.1f;
 
@@ -643,9 +642,9 @@ void render()
 		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
 	}
 	// GUN
-	offset = vec2(40, 80);
+	offset = vec2(60, 80);
 	uloc = glGetUniformLocation(program, "index");		if (uloc > -1) glUniform1i(uloc, gun.prop->gun_id + 8);
-	model_matrix = mat4::translate(offset.x , -offset.y, -1 ) * mat4::scale(35, 35, 1);
+	model_matrix = mat4::translate(offset.x , -offset.y, -1 ) * mat4::scale(80, 80, 1);
 	uloc = glGetUniformLocation(program, "model_matrix");			if (uloc > -1) glUniformMatrix4fv(uloc, 1, GL_TRUE, model_matrix);
 	glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
 
