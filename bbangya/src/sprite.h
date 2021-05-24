@@ -12,12 +12,12 @@ static const char* sprite_shotgun_image_path = "../bin/textures/shotgun.png";
 static const char* sprite_machinegun_image_path = "../bin/textures/machinegun.png";
 static const char* sprite_bullet_image_path = "../bin/textures/bullet.png";
 
-static const char* menu_start_image_path = "../bin/textures/menu_start.png";
-static const char* menu_easy_image_path = "../bin/textures/menu_easy.png";
-static const char* menu_normal_image_path = "../bin/textures/menu_normal.png";
-static const char* menu_hard_image_path = "../bin/textures/menu_hard.png";
+static const char* menu_start_image_path = "../bin/textures/menu_start.jpg";
+static const char* menu_easy_image_path = "../bin/textures/menu_easy.jpg";
+static const char* menu_normal_image_path = "../bin/textures/menu_normal.jpg";
+static const char* menu_hard_image_path = "../bin/textures/menu_hard.jpg";
 static const char* menu_impossible_image_path = "../bin/textures/menu_impossible.png";
-static const char* menu_help_image_path = "../bin/textures/menu_help.png";
+static const char* menu_help_image_path = "../bin/textures/menu_help.jpg";
 static const char* menu_end_image_path = "../bin/textures/menu_end.png";
 
 std::vector<uint> sprite_indices = { 0, 2, 1, 1, 2, 3 };
